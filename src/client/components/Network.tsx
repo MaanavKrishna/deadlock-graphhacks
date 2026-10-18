@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { ArrowUpRight, CircleDot, Maximize2 } from 'lucide-react';
 import type { Agency, GraphEdge, LoopStats } from '../../shared/types';
 import { serviceNames } from '../../shared/types';
@@ -28,6 +28,7 @@ export default function Network({
   onSelectAgency: (a: Agency) => void;
 }) {
   const canvasHeight = agencies.length > 8 ? 600 : 400;
+  const reduce = useReducedMotion();
   const positions = useMemo(
     () =>
       new Map(
@@ -86,7 +87,7 @@ export default function Network({
               refY="3.5"
               orient="auto"
             >
-              <path d="M0,0 L7,3.5 L0,7" fill="#c6c9dd" />
+              <path d="M0,0 L7,3.5 L0,7" fill="#4a4d5e" />
             </marker>
             <marker
               id="arrow-selected"
@@ -96,7 +97,7 @@ export default function Network({
               refY="3.5"
               orient="auto"
             >
-              <path d="M0,0 L7,3.5 L0,7" fill="#7168db" />
+              <path d="M0,0 L7,3.5 L0,7" fill="#8f8cf5" />
             </marker>
           </defs>
           {edges.map(({ from, to }) => {
@@ -113,19 +114,27 @@ export default function Network({
               y1 = p.y + uy * 33,
               x2 = q.x - ux * 57,
               y2 = q.y - uy * 37;
+            const path = `M${x1},${y1} Q${(x1 + x2) / 2 - uy * 20},${(y1 + y2) / 2 + ux * 20} ${x2},${y2}`;
             return (
-              <motion.path
-                key={from.id + to.id + (active ? ':selected' : '')}
-                initial={active ? { pathLength: 0, opacity: 1 } : { opacity: 0 }}
-                animate={{ pathLength: 1, opacity: available ? (active ? 1 : 0.55) : 0.25 }}
-                transition={{ duration: active ? 0.7 : 0.4, ease: 'easeInOut' }}
-                d={`M${x1},${y1} Q${(x1 + x2) / 2 - uy * 20},${(y1 + y2) / 2 + ux * 20} ${x2},${y2}`}
-                fill="none"
-                stroke={active ? '#7168db' : '#c6c9dd'}
-                strokeWidth={active ? 2.8 : 1.3}
-                strokeDasharray={!available ? '5 5' : undefined}
-                markerEnd={`url(#arrow-${active ? 'selected' : 'muted'})`}
-              />
+              <g key={from.id + to.id}>
+                <motion.path
+                  key={from.id + to.id + (active ? ':selected' : '')}
+                  initial={active ? { pathLength: 0, opacity: 1 } : { opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: available ? (active ? 1 : 0.55) : 0.25 }}
+                  transition={{ duration: active ? 0.7 : 0.4, ease: 'easeInOut' }}
+                  d={path}
+                  fill="none"
+                  stroke={active ? '#8f8cf5' : '#3a3d4d'}
+                  strokeWidth={active ? 2.8 : 1.3}
+                  strokeDasharray={!available ? '5 5' : undefined}
+                  markerEnd={`url(#arrow-${active ? 'selected' : 'muted'})`}
+                />
+                {active && !reduce && (
+                  <circle r={4} className="edge-particle">
+                    <animateMotion dur="1.8s" repeatCount="indefinite" path={path} begin="0.7s" />
+                  </circle>
+                )}
+              </g>
             );
           })}
         </svg>

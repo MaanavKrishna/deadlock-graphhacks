@@ -363,7 +363,7 @@ export default function NegotiationRoom({
                       if (a) onWithdraw(a);
                     }}
                   >
-                    Simulate withdrawal
+                    Pause an agency
                   </button>
                   <button className="text-button danger" disabled={busy} onClick={onCancel}>
                     Cancel
@@ -393,7 +393,8 @@ export default function NegotiationRoom({
               </a>
             )}
             <p className="sandbox-note">
-              {sampleData ? 'Sample agencies. ' : ''}No money or services transferred.
+              {sampleData ? 'Example agencies are synthetic. ' : ''}Capacity agreements only; no
+              money moves.
             </p>
           </div>
         </>

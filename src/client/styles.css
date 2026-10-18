@@ -3086,3 +3086,351 @@ time {
   background: var(--purple);
   border-radius: 99px;
 }
+
+/* ===== Workspace v2 (Claude Design "Workspace v2 — command center") ===== */
+:root {
+  background: #eef0f4;
+}
+.sidebar {
+  width: 92px;
+  padding: 20px 10px;
+  align-items: center;
+  background: #0c0d11;
+}
+.brand {
+  padding: 0;
+  margin-bottom: 18px;
+  justify-content: center;
+}
+.brand strong {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.nav-items {
+  width: 100%;
+  gap: 6px;
+}
+.nav-items button,
+.help-nav {
+  position: relative;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+  padding: 10px 4px;
+  min-height: 64px;
+  width: 100%;
+  border-radius: 14px;
+  text-align: center;
+  color: #9a9db0;
+  background: transparent;
+}
+.nav-items button.active,
+.help-nav.active {
+  background: transparent;
+  color: #ffffff;
+}
+.nav-items button > svg,
+.help-nav > svg {
+  position: relative;
+  z-index: 1;
+}
+.rail-label {
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+}
+.rail-active {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: #5b57f0;
+}
+.nav-items .nav-count {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  z-index: 2;
+  margin: 0;
+  background: #f0a35c;
+  color: #0c0d11;
+  font-size: 11px;
+  min-width: 18px;
+  padding: 1px 4px;
+  border-radius: 99px;
+}
+.sidebar-bottom {
+  width: 100%;
+}
+.help-nav {
+  margin-bottom: 0;
+}
+.main-shell {
+  margin-left: 92px;
+  width: calc(100% - 92px);
+}
+.topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e4ea;
+}
+.workspace-title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 17px;
+  color: #111318;
+  letter-spacing: -0.01em;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.status-pill.live {
+  background: #e3f4f0;
+  color: #0b6e64;
+}
+.status-pill.live i {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: #0f9d85;
+  box-shadow: 0 0 0 0 rgba(15, 157, 133, 0.5);
+  animation: live-pulse 2s infinite;
+}
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(15, 157, 133, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(15, 157, 133, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(15, 157, 133, 0);
+  }
+}
+.status-pill.agents {
+  background: #ecebfb;
+  color: #3b37c8;
+}
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.stat-tile {
+  background: #ffffff;
+  border: 1px solid #e2e4ea;
+  border-radius: 16px;
+  padding: 14px 16px;
+  min-width: 0;
+}
+.stat-tile > span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.stat-tile strong {
+  display: block;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #111318;
+}
+.stat-tile .stat-text {
+  display: block;
+  font-size: 20px;
+  line-height: 1.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stat-tile.held strong {
+  color: #b4581f;
+}
+.stat-tile.committed strong {
+  color: #0b6e64;
+}
+.agent-controls {
+  font-size: 14px;
+  color: #3d4150;
+  border-color: #e2e4ea;
+}
+.agent-controls select {
+  font-size: 14px;
+  min-height: 38px;
+  color: #111318;
+}
+.agent-controls > span {
+  font-size: 13px;
+  color: var(--muted);
+}
+/* Dark graph stage */
+.network-panel {
+  background: #0c0d11;
+  border-color: #0c0d11;
+  color: #e8e9ee;
+  border-radius: 22px;
+}
+.network-panel .panel-heading h2 {
+  color: #ffffff;
+}
+.network-panel .panel-heading p {
+  color: #9a9db0;
+}
+.network-panel .quiet-pill {
+  background: #16181f;
+  border-color: #2c2f3a;
+  color: #c9cbd6;
+}
+.network-canvas {
+  background-color: #0c0d11;
+  background-image: radial-gradient(#22242e 1px, transparent 1px);
+  background-size: 22px 22px;
+  border-radius: 16px;
+}
+.network-node {
+  background: #16181f;
+  border: 1px solid #2c2f3a;
+  color: #e8e9ee;
+  box-shadow: none;
+}
+.network-node strong {
+  color: #ffffff;
+}
+.network-node > span:last-child {
+  color: #9a9db0;
+}
+.network-node.selected {
+  border: 2px solid #8f8cf5;
+  box-shadow: 0 0 0 6px rgba(143, 140, 245, 0.14);
+}
+.network-node.unavailable {
+  opacity: 0.45;
+}
+.network-center strong {
+  color: #ffffff;
+}
+.network-center span,
+.network-center .loop-symbol {
+  color: #8b8fa3;
+}
+.network-footer {
+  border-top-color: #1c1e26;
+  color: #9a9db0;
+}
+.network-footer .legend-line {
+  background: #3a3d4d;
+}
+.network-footer .legend-line.chosen {
+  background: #8f8cf5;
+}
+.network-panel .keystone-badge {
+  background: #f0a35c;
+  color: #0c0d11;
+}
+.edge-particle {
+  fill: #ffffff;
+  filter: drop-shadow(0 0 4px #8f8cf5);
+}
+.room-drawer {
+  min-width: 0;
+}
+.room {
+  border-radius: 22px;
+}
+.opportunity {
+  border-radius: 16px;
+}
+.opportunity.selected {
+  border-color: #5b57f0;
+  box-shadow: 0 8px 24px rgba(91, 87, 240, 0.14);
+}
+.workspace-onboarding {
+  background: #ffffff;
+  border: 1px solid #e2e4ea;
+  border-radius: 22px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.onboarding-step {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: #3b37c8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.workspace-onboarding h2 {
+  font-family: var(--display);
+  font-size: 26px;
+  margin: 6px 0 8px;
+}
+.onboarding-meter {
+  height: 8px;
+  border-radius: 99px;
+  background: #eceef2;
+  overflow: hidden;
+  margin: 14px 0;
+}
+.onboarding-meter i {
+  display: block;
+  height: 100%;
+  background: #5b57f0;
+}
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+@media (max-width: 700px) {
+  .sidebar {
+    width: 100%;
+    padding: 10px 12px;
+    flex-direction: row;
+    align-items: center;
+  }
+  .brand {
+    margin: 0;
+  }
+  .nav-items {
+    width: auto;
+    flex-direction: row;
+  }
+  .nav-items button,
+  .help-nav {
+    min-height: 52px;
+    width: 52px;
+    padding: 6px;
+  }
+  .rail-label {
+    display: none;
+  }
+  .sidebar-bottom {
+    width: auto;
+  }
+  .main-shell {
+    margin-left: 0;
+    width: 100%;
+  }
+  .status-pill.agents {
+    display: none;
+  }
+}
+.network-panel .network-center {
+  background: rgba(12, 13, 17, 0.78);
+  border-color: #2c2f3a;
+  box-shadow: none;
+  backdrop-filter: blur(4px);
+}

@@ -114,7 +114,7 @@ export default function MemoryView({
                 </div>
                 <small>
                   {state.synthetic
-                    ? 'Entered feedback for sample agencies. '
+                    ? 'Feedback on example agencies. '
                     : 'Participant-entered feedback. '}
                   It changes future objectives, not hard limits.
                 </small>

@@ -35,6 +35,7 @@ import History from './components/History';
 import MemoryView from './components/MemoryView';
 import AskView from './components/AskView';
 import GrowthCard from './components/GrowthCard';
+import StatsRow from './components/StatsRow';
 
 type View = 'exchange' | 'ask' | 'agencies' | 'history' | 'memory' | 'guide';
 export default function App() {
@@ -135,11 +136,11 @@ export default function App() {
     }
   }
   const nav = [
-    { id: 'exchange' as const, label: 'Exchange desk', icon: NetworkIcon },
-    { id: 'ask' as const, label: 'Ask the network', icon: MessageSquareText },
-    { id: 'agencies' as const, label: 'Agencies', icon: Users },
-    { id: 'history' as const, label: 'Activity', icon: HistoryIcon },
-    { id: 'memory' as const, label: 'Memory', icon: BookOpen },
+    { id: 'exchange' as const, label: 'Exchange desk', short: 'Exchange', icon: NetworkIcon },
+    { id: 'ask' as const, label: 'Ask the network', short: 'Ask', icon: MessageSquareText },
+    { id: 'agencies' as const, label: 'Agencies', short: 'Agencies', icon: Users },
+    { id: 'history' as const, label: 'Activity', short: 'Activity', icon: HistoryIcon },
+    { id: 'memory' as const, label: 'Memory', short: 'Memory', icon: BookOpen },
   ];
   const available = state?.agencies.filter((a) => a.active).length ?? 0,
     pending = state?.deals.filter((d) => d.status === 'awaiting_approval').length ?? 0;
@@ -156,7 +157,6 @@ export default function App() {
           </span>
           <strong>deadlock</strong>
         </a>
-        <span className="workspace-label">Community workspace</span>
         <div className="nav-items">
           {nav.map((n) => (
             <button
@@ -164,9 +164,17 @@ export default function App() {
               onClick={() => setView(n.id)}
               className={view === n.id ? 'active' : ''}
               aria-current={view === n.id ? 'page' : undefined}
+              title={n.label}
             >
-              <n.icon size={18} />
-              {n.label}
+              {view === n.id && (
+                <motion.i
+                  layoutId="rail-active"
+                  className="rail-active"
+                  transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                />
+              )}
+              <n.icon size={20} />
+              <span className="rail-label">{n.short}</span>
               {n.id === 'agencies' && state && (
                 <span className="nav-count">{state.agencies.length}</span>
               )}
@@ -175,40 +183,23 @@ export default function App() {
           ))}
         </div>
         <div className="sidebar-bottom">
-          <div className="sidebar-note">
-            <span className="tiny-loop">↻</span>
-            <strong>Good things go around.</strong>
-            <p>Turn what you have into what you need.</p>
-            <button
-              onClick={() => {
-                setView('guide');
-                setGuideOpen(true);
-              }}
-            >
-              How it works <ArrowUpRight size={14} />
-            </button>
-          </div>
           <button
             className={`help-nav ${view === 'guide' ? 'active' : ''}`}
             onClick={() => setView('guide')}
+            title="Settings and guide"
           >
-            <CircleHelp size={17} />
-            Guide & settings
+            <Settings2 size={20} />
+            <span className="rail-label">Settings</span>
           </button>
-          <div className="workspace-person">
-            <span className="person-avatar">C</span>
-            <div>
-              <strong>ContextSense</strong>
-              <span>Graph Hacks workspace</span>
-            </div>
-            <span className="workspace-dot" />
-          </div>
         </div>
       </nav>
       <div className="main-shell">
         <header className="topbar">
           <div className="breadcrumb">
-            Workspace <ChevronRight size={13} />
+            <span className="workspace-title">
+              {state?.synthetic === false ? 'Your network' : 'Example network'}
+            </span>
+            <ChevronRight size={13} />
             <strong>
               {view === 'exchange'
                 ? 'Exchange desk'
@@ -234,16 +225,20 @@ export default function App() {
                 setResetOpen(true);
               }}
             >
-              <option value="starter">Sample · 6 agencies</option>
+              <option value="starter">Example · 6 agencies</option>
               <option value="launch">Challenge · 10 agencies</option>
-              <option value="empty">New empty workspace</option>
+              <option value="empty">Start your own network</option>
               <option value="custom" disabled>
-                Your workspace
+                Your network
               </option>
             </select>
-            <span className="demo-badge">
-              {state?.synthetic ? 'Sample data' : 'Your workspace'}
+            <span className="status-pill live">
+              <i />
+              {state?.database ?? 'Connecting'}
             </span>
+            {state?.modelConfigured && (
+              <span className="status-pill agents">Claude agents ready</span>
+            )}
             <button
               className="icon-button"
               aria-label="Refresh workspace"
@@ -262,7 +257,7 @@ export default function App() {
               </div>
               <h1>
                 {view === 'exchange'
-                  ? 'Find your way to a deal.'
+                  ? 'Find the loops in your network.'
                   : view === 'ask'
                     ? 'Ask the graph. Get sources.'
                     : view === 'agencies'
@@ -275,7 +270,7 @@ export default function App() {
               </h1>
               <p>
                 {view === 'exchange'
-                  ? 'Your spare capacity could be someone else’s next big thing.'
+                  ? 'FalkorDB traces who can serve whom, finds closed exchanges and shows what each one depends on.'
                   : view === 'ask'
                     ? 'An agent chains graph tools to answer, then cites every agency, agreement and lesson it used.'
                     : view === 'agencies'
@@ -360,25 +355,7 @@ export default function App() {
               {view === 'exchange' && (
                 <div className="exchange-layout">
                   <div className="exchange-main">
-                    <div className="context-strip">
-                      <span>
-                        <span className="mini-avatar-icon">
-                          <Users size={14} />
-                        </span>
-                        <strong>{available}</strong> available agencies
-                      </span>
-                      <span>
-                        <GitBranch size={14} />
-                        <strong>
-                          {latestRun?.candidates.filter((c) => c.feasible).length ?? '—'}
-                        </strong>{' '}
-                        feasible exchanges
-                      </span>
-                      <span>
-                        <ShieldCheck size={14} />
-                        <strong>{pending}</strong> awaiting approval
-                      </span>
-                    </div>
+                    <StatsRow state={state} />
                     <div className="agent-controls">
                       <label>
                         Representatives
@@ -417,19 +394,43 @@ export default function App() {
                           : 'No model key configured'}
                       </span>
                     </div>
-                    {state.agencies.length === 0 && (
-                      <div className="workspace-onboarding">
+                    {state.agencies.length < 3 && !state.synthetic && (
+                      <motion.div
+                        className="workspace-onboarding"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
+                        <span className="onboarding-step">
+                          {state.agencies.length} of 3 agencies
+                        </span>
                         <h2>Your network starts with an offer.</h2>
                         <p>
-                          Add at least three agencies with complementary services, capacity and
-                          deadlines. Representatives negotiate the terms; you review and approve the
-                          proposed exchange.
+                          Add agencies with what they offer, what they need, spare hours and
+                          deadlines. With three complementary profiles the graph can close its first
+                          loop.
                         </p>
-                        <button className="primary" onClick={() => setEditor(null)}>
-                          <Plus size={15} />
-                          Add first agency
-                        </button>
-                      </div>
+                        <div className="onboarding-meter" aria-hidden="true">
+                          <motion.i
+                            animate={{ width: `${(state.agencies.length / 3) * 100}%` }}
+                            transition={{ type: 'spring', stiffness: 140, damping: 20 }}
+                          />
+                        </div>
+                        <div className="onboarding-actions">
+                          <button className="primary" onClick={() => setEditor(null)}>
+                            <Plus size={15} />
+                            Add agency
+                          </button>
+                          <button
+                            className="secondary"
+                            onClick={() => {
+                              setResetScenario('starter');
+                              setResetOpen(true);
+                            }}
+                          >
+                            Load the example network
+                          </button>
+                        </div>
+                      </motion.div>
                     )}
                     <Network
                       agencies={state.agencies}
@@ -596,37 +597,45 @@ export default function App() {
                       <span>Powered by FalkorDB</span>
                     </div>
                   </div>
-                  <NegotiationRoom
-                    candidate={candidate}
-                    deal={deal}
-                    agencies={state.agencies}
-                    busy={busy}
-                    sampleData={state.synthetic}
-                    onNegotiate={startNegotiation}
-                    onApprove={(id) => {
-                      if (deal)
-                        action(
-                          () => api(`/deals/${deal.id}/approve`, { agencyId: id }),
-                          'Approval recorded.',
-                        );
-                    }}
-                    onCancel={() => {
-                      if (deal)
-                        action(
-                          () => api(`/deals/${deal.id}/cancel`, {}),
-                          'Agreement cancelled. Capacity holds released.',
-                        );
-                    }}
-                    onWithdraw={withdraw}
-                    onReroute={discover}
-                    onRemember={(agencyId, preferredHours) => {
-                      if (deal)
-                        action(
-                          () => api(`/deals/${deal.id}/lessons`, { agencyId, preferredHours }),
-                          'Preference saved in the graph. Future representatives can use it.',
-                        );
-                    }}
-                  />
+                  <motion.div
+                    className="room-drawer"
+                    key={deal?.id ?? candidate?.id ?? 'empty'}
+                    initial={{ opacity: 0, x: 28 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+                  >
+                    <NegotiationRoom
+                      candidate={candidate}
+                      deal={deal}
+                      agencies={state.agencies}
+                      busy={busy}
+                      sampleData={state.synthetic}
+                      onNegotiate={startNegotiation}
+                      onApprove={(id) => {
+                        if (deal)
+                          action(
+                            () => api(`/deals/${deal.id}/approve`, { agencyId: id }),
+                            'Approval recorded.',
+                          );
+                      }}
+                      onCancel={() => {
+                        if (deal)
+                          action(
+                            () => api(`/deals/${deal.id}/cancel`, {}),
+                            'Agreement cancelled. Capacity holds released.',
+                          );
+                      }}
+                      onWithdraw={withdraw}
+                      onReroute={discover}
+                      onRemember={(agencyId, preferredHours) => {
+                        if (deal)
+                          action(
+                            () => api(`/deals/${deal.id}/lessons`, { agencyId, preferredHours }),
+                            'Preference saved in the graph. Future representatives can use it.',
+                          );
+                      }}
+                    />
+                  </motion.div>
                 </div>
               )}
               {view === 'agencies' && (
@@ -712,7 +721,7 @@ export default function App() {
                         <div>
                           <h3>Find a new path when plans change</h3>
                           <p>
-                            Simulate a withdrawal. Pending agreements are invalidated, holds are
+                            Pause an agency. Its pending agreements are invalidated, holds are
                             released, and a new graph search finds alternatives. The old decisions
                             remain in Activity.
                           </p>
@@ -721,7 +730,7 @@ export default function App() {
                     </ol>
                     <button className="primary" disabled={busy} onClick={discover}>
                       <Play size={15} />
-                      Start the demo
+                      Find loops now
                     </button>
                   </article>
                   <div className="guide-side">
@@ -740,7 +749,7 @@ export default function App() {
                           <dt>Data</dt>
                           <dd>
                             {state.synthetic
-                              ? 'Authored sample agencies'
+                              ? 'Example network (synthetic agencies)'
                               : 'User-entered agency profiles'}
                           </dd>
                         </div>
@@ -757,10 +766,10 @@ export default function App() {
                       </p>
                     </article>
                     <article className="settings-card">
-                      <h3>A safe place to try things</h3>
+                      <h3>Workspace</h3>
                       <p>
                         {state.synthetic
-                          ? 'Sample approvals reserve fictional service capacity.'
+                          ? 'The example network uses synthetic agencies.'
                           : 'Approvals reserve the service capacity entered in this workspace.'}{' '}
                         The app records agreed capacity. No agency is contacted, no money changes
                         hands, and no service is delivered.
@@ -773,11 +782,11 @@ export default function App() {
                         }}
                       >
                         <RotateCcw size={15} />
-                        Reset demo workspace
+                        Replace workspace
                       </button>
                       <p className="subtle">
-                        Reset removes this workspace’s agencies and history and restores the
-                        original six profiles.
+                        Choose the example network, the ten-agency challenge, or start your own
+                        network from an empty graph. Replacing clears agencies and history.
                       </p>
                     </article>
                   </div>
@@ -860,7 +869,7 @@ function ResetDialog({
           ? 'empty workspace'
           : scenario === 'launch'
             ? 'launch challenge'
-            : 'sample network'}
+            : 'example network'}
         ?
       </h2>
       <p>
