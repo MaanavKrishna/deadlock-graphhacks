@@ -9,6 +9,7 @@ import {
   GitBranch,
   History as HistoryIcon,
   Layers3,
+  MessageSquareText,
   LoaderCircle,
   Network as NetworkIcon,
   Play,
@@ -31,8 +32,9 @@ import NegotiationRoom from './components/NegotiationRoom';
 import AgencyDirectory, { AgencyEditor } from './components/AgencyDirectory';
 import History from './components/History';
 import MemoryView from './components/MemoryView';
+import AskView from './components/AskView';
 
-type View = 'exchange' | 'agencies' | 'history' | 'memory' | 'guide';
+type View = 'exchange' | 'ask' | 'agencies' | 'history' | 'memory' | 'guide';
 export default function App() {
   const [state, setState] = useState<Snapshot>();
   const [view, setView] = useState<View>('exchange');
@@ -132,6 +134,7 @@ export default function App() {
   }
   const nav = [
     { id: 'exchange' as const, label: 'Exchange desk', icon: NetworkIcon },
+    { id: 'ask' as const, label: 'Ask the network', icon: MessageSquareText },
     { id: 'agencies' as const, label: 'Agencies', icon: Users },
     { id: 'history' as const, label: 'Activity', icon: HistoryIcon },
     { id: 'memory' as const, label: 'Memory', icon: BookOpen },
@@ -207,13 +210,15 @@ export default function App() {
             <strong>
               {view === 'exchange'
                 ? 'Exchange desk'
-                : view === 'agencies'
-                  ? 'Agencies'
-                  : view === 'history'
-                    ? 'Activity'
-                    : view === 'memory'
-                      ? 'Agent memory'
-                      : 'Guide & settings'}
+                : view === 'ask'
+                  ? 'Ask the network'
+                  : view === 'agencies'
+                    ? 'Agencies'
+                    : view === 'history'
+                      ? 'Activity'
+                      : view === 'memory'
+                        ? 'Agent memory'
+                        : 'Guide & settings'}
             </strong>
           </div>
           <div className="topbar-right">
@@ -256,24 +261,28 @@ export default function App() {
               <h1>
                 {view === 'exchange'
                   ? 'Find your way to a deal.'
-                  : view === 'agencies'
-                    ? 'Different strengths. Shared possibilities.'
-                    : view === 'history'
-                      ? 'Nothing gets lost along the way.'
-                      : view === 'memory'
-                        ? 'A better next time starts here.'
-                        : 'A little context goes a long way.'}
+                  : view === 'ask'
+                    ? 'Ask the graph. Get sources.'
+                    : view === 'agencies'
+                      ? 'Different strengths. Shared possibilities.'
+                      : view === 'history'
+                        ? 'Nothing gets lost along the way.'
+                        : view === 'memory'
+                          ? 'A better next time starts here.'
+                          : 'A little context goes a long way.'}
               </h1>
               <p>
                 {view === 'exchange'
                   ? 'Your spare capacity could be someone else’s next big thing.'
-                  : view === 'agencies'
-                    ? 'Bring an offer, name a need, and let the connections do their work.'
-                    : view === 'history'
-                      ? 'Revisit the paths, proposals and decisions that brought everyone together.'
-                      : view === 'memory'
-                        ? 'Preferences persist in the graph, with a path back to the decision that taught them.'
-                        : 'Understand the exchange, the agents, and the limits of this workspace.'}
+                  : view === 'ask'
+                    ? 'An agent chains graph tools to answer, then cites every agency, agreement and lesson it used.'
+                    : view === 'agencies'
+                      ? 'Bring an offer, name a need, and let the connections do their work.'
+                      : view === 'history'
+                        ? 'Revisit the paths, proposals and decisions that brought everyone together.'
+                        : view === 'memory'
+                          ? 'Preferences persist in the graph, with a path back to the decision that taught them.'
+                          : 'Understand the exchange, the agents, and the limits of this workspace.'}
               </p>
             </div>
             {view === 'exchange' && (
@@ -606,6 +615,17 @@ export default function App() {
                     setCandidate(undefined);
                     setView('exchange');
                   }}
+                />
+              )}
+              {view === 'ask' && (
+                <AskView
+                  state={state}
+                  onOpenDeal={(d) => {
+                    setDealId(d.id);
+                    setCandidate(undefined);
+                    setView('exchange');
+                  }}
+                  onOpenAgency={(id) => setEditor(state.agencies.find((a) => a.id === id))}
                 />
               )}
               {view === 'memory' && (

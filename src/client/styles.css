@@ -2925,3 +2925,115 @@ time {
 .memory-failed {
   color: #8a3d0b;
 }
+
+.ask-view {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 920px;
+}
+.ask-form {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ask-form label {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+}
+.ask-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ask-row input {
+  flex: 1 1 260px;
+  min-height: 44px;
+  border: 1px solid #d9dbe3;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 15px;
+}
+.ask-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ask-examples .secondary {
+  white-space: normal;
+  text-align: left;
+}
+.ask-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.ask-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ask-answer {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+}
+.ask-answer h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.ask-answer p {
+  margin: 0 0 14px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.ask-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.ask-sources > span {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.source-chip {
+  min-height: 32px;
+  border: 1px solid #d9dbe3;
+  background: #f7f7fb;
+  border-radius: 99px;
+  padding: 2px 12px;
+  font-size: 13px;
+  color: #111318;
+  cursor: pointer;
+}
+.source-chip:disabled {
+  cursor: default;
+}
+.source-chip b {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--purple);
+  margin-right: 4px;
+}
+.ask-answer details {
+  font-size: 13px;
+  color: var(--muted);
+}
+.ask-answer code {
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}

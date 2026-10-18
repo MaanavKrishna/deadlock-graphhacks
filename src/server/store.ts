@@ -269,6 +269,18 @@ export class Store {
         : [],
     };
   }
+  currentModel(): ModelConfig | undefined {
+    return this.resolveModel();
+  }
+  // Read-only access for the graph tools; queries are fixed strings with parameters.
+  async readGraph<T>(query: string, params: Record<string, string | number | boolean> = {}) {
+    return (await this.connection.graph.roQuery<T>(query, { params })).data ?? [];
+  }
+  async listLoops(): Promise<{ id: string; agencyIds: string[]; names: string[] }[]> {
+    const [loops, state] = await Promise.all([this.loops(), this.read()]);
+    const name = (id: string) => state.agencies.find((a) => a.id === id)?.name ?? id;
+    return loops.map((ids) => ({ id: ids.join('|'), agencyIds: ids, names: ids.map(name) }));
+  }
   async impact(agencyId: string): Promise<Impact> {
     const state = await this.read();
     if (!state.agencies.some((a) => a.id === agencyId))

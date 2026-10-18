@@ -169,6 +169,18 @@ export interface Insight {
   revision: number;
   createdAt: string;
 }
+export interface Source {
+  type: 'agency' | 'deal' | 'lesson' | 'insight' | 'loop';
+  id: string;
+  label: string;
+}
+export interface Answer {
+  question: string;
+  answer: string;
+  sources: Source[];
+  trace: { tool: string; args: unknown; resultCount: number }[];
+  model?: string;
+}
 export interface AgentContext {
   agency: Agency;
   participants: Agency[];

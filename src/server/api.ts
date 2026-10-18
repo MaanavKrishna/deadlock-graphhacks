@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { DomainError, type Store } from './store';
 import { services } from '../shared/types';
+import { askNetwork } from './ask';
 
 const hours = z.number().finite().min(0.25).max(1000).multipleOf(0.25);
 const agencySchema = z.object({
@@ -63,6 +64,25 @@ export function createApp(store: Store, options: { accessKey?: () => string | un
   app.get('/api/agencies/:id/impact', async (req, res) =>
     res.json(await store.impact(req.params.id)),
   );
+  app.post('/api/ask', async (req, res) => {
+    const { question } = z.object({ question: z.string().trim().min(3).max(500) }).parse(req.body);
+    requireKey(req);
+    const config = store.currentModel();
+    if (!config)
+      throw new DomainError(
+        'Asking the network needs a configured model (MODEL_API_KEY and MODEL_NAME).',
+        400,
+      );
+    try {
+      res.json(await askNetwork(store, question, config));
+    } catch (error) {
+      if (error instanceof DomainError) throw error;
+      throw new DomainError(
+        `The agent could not finish: ${(error as Error).message.slice(0, 160)}`,
+        502,
+      );
+    }
+  });
   app.post('/api/discover', async (_req, res) => res.json(await store.discover()));
   app.post('/api/negotiate', async (req, res) => {
     const body = z
