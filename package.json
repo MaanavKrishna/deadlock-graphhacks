@@ -49,5 +49,9 @@
   "optionalDependencies": {
     "@falkordblite/darwin-arm64": "8.2.3-falkordb.4.16.3",
     "@falkordblite/linux-x64": "8.2.3-falkordb.4.16.3"
+  },
+  "overrides": {
+    "@falkordblite/darwin-arm64": "8.2.3-falkordb.4.16.3",
+    "@falkordblite/linux-x64": "8.2.3-falkordb.4.16.3"
   }
 }
