@@ -177,8 +177,8 @@ export default function Docs() {
               An agent answers questions by chaining fixed graph tools: <code>list_agencies</code>,{' '}
               <code>find_providers</code>, <code>who_can_serve</code>, <code>find_loops</code>,{' '}
               <code>withdrawal_impact</code>, <code>agency_history</code>, <code>explain_deal</code>
-              , <code>recruit_suggestions</code>. It never writes Cypher, and it may only cite node
-              ids those tools returned.
+              , <code>recruit_suggestions</code>, <code>network_structure</code>. It never writes
+              Cypher, and it may only cite node ids those tools returned.
             </p>
           </Section>
           <Section id="mcp" title="MCP server">
@@ -206,6 +206,11 @@ export default function Docs() {
                     ['POST /api/deals/:id/approve', '{agencyId}: one human approval'],
                     ['GET /api/agencies/:id/impact', 'What-if withdrawal'],
                     ['GET /api/growth', 'Recruitment suggestions'],
+                    ['GET /api/structure', 'FalkorDB PageRank, betweenness and components'],
+                    [
+                      'POST /api/negotiate/stream',
+                      'Same as negotiate, streamed as NDJSON decisions',
+                    ],
                     ['POST /api/ask', '{question}: sourced answer (access key when set)'],
                     ['POST /api/tools/:name', 'Read-only graph tools'],
                   ].map(([route, what]) => (

@@ -7,6 +7,8 @@ import {
   MessageSquareText,
   Plug,
   ShieldCheck,
+  Waypoints,
+  Radio,
 } from 'lucide-react';
 import { Link } from '../router';
 import { SiteHeader, SiteFooter } from './SiteChrome';
@@ -115,6 +117,16 @@ const features = [
     icon: Network,
     title: 'Keystones and who to recruit',
     body: 'See the agency every loop depends on, and which new profile would open the most new loops.',
+  },
+  {
+    icon: Waypoints,
+    title: 'Real graph algorithms',
+    body: 'FalkorDB PageRank, betweenness and connected components find the broker and the sub-networks that can never trade.',
+  },
+  {
+    icon: Radio,
+    title: 'Watch agents negotiate',
+    body: 'Every Claude representative decision streams live, then the whole loop waits for human approval.',
   },
   {
     icon: Brain,
