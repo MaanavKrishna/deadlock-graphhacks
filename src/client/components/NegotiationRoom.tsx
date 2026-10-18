@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import {
   ArrowRight,
   Check,
@@ -220,10 +221,16 @@ export default function NegotiationRoom({
             </div>
           ) : (
             <div className="agent-log">
-              {deal.events.map((e) => {
+              {deal.events.map((e, i) => {
                 const a = members.find((a) => a.id === e.actor);
                 return (
-                  <div key={e.id} className={`log-entry ${e.action}`}>
+                  <motion.div
+                    key={e.id}
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: Math.min(i, 12) * 0.05, duration: 0.3 }}
+                    className={`log-entry ${e.action}`}
+                  >
                     <div className="log-marker">
                       {a ? (
                         <Avatar agency={a} small />
@@ -252,7 +259,7 @@ export default function NegotiationRoom({
                         </span>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -322,6 +329,20 @@ export default function NegotiationRoom({
             )}
             {deal?.status === 'awaiting_approval' && (
               <>
+                <div
+                  className="approval-meter"
+                  role="progressbar"
+                  aria-label="Human approvals"
+                  aria-valuemin={0}
+                  aria-valuemax={members.length}
+                  aria-valuenow={deal.approvals.length}
+                >
+                  <motion.i
+                    initial={false}
+                    animate={{ width: `${(deal.approvals.length / members.length) * 100}%` }}
+                    transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+                  />
+                </div>
                 <p className="approval-note">
                   {deal.approvals.length} of {members.length} human approvals. Capacity is held; the
                   whole cycle commits after the final approval.

@@ -40,7 +40,7 @@ npm run doctor
 npm run dev
 ```
 
-Open **http://127.0.0.1:3000**. The server starts a real local FalkorDB process and seeds six synthetic agencies on first use. Persistent graph files live in `.data/graph`. Stop with Ctrl+C. Start again to resume the same agreements and history.
+Open **http://127.0.0.1:3000** for the landing page, **/app** for the workspace and **/docs** for the documentation. The server starts a real local FalkorDB process and seeds six synthetic agencies on first use. Persistent graph files live in `.data/graph`. Stop with Ctrl+C. Start again to resume the same agreements and history.
 
 The root optional dependencies pin the corrected platform binary release. Do not remove them: an older upstream macOS package contains Linux executables. If npm omits optional dependencies, run `npm ci --include=optional`. `npm run doctor` verifies an actual Cypher query against the native engine.
 

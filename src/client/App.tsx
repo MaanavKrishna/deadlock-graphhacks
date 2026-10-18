@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -298,23 +299,38 @@ export default function App() {
             )}
           </div>
           <div aria-live="polite" className="announcements">
-            {error && (
-              <div className="banner error" role="alert">
-                <span>{error}</span>
-                <button onClick={() => setError('')} aria-label="Dismiss error">
-                  <X size={16} />
-                </button>
-              </div>
-            )}
-            {notice && (
-              <div className="banner success">
-                <Check size={16} />
-                <span>{notice}</span>
-                <button onClick={() => setNotice('')} aria-label="Dismiss notification">
-                  <X size={16} />
-                </button>
-              </div>
-            )}
+            <AnimatePresence initial={false}>
+              {error && (
+                <motion.div
+                  key="error"
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="banner error"
+                  role="alert"
+                >
+                  <span>{error}</span>
+                  <button onClick={() => setError('')} aria-label="Dismiss error">
+                    <X size={16} />
+                  </button>
+                </motion.div>
+              )}
+              {notice && (
+                <motion.div
+                  key="notice"
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="banner success"
+                >
+                  <Check size={16} />
+                  <span>{notice}</span>
+                  <button onClick={() => setNotice('')} aria-label="Dismiss notification">
+                    <X size={16} />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
           {!state ? (
             <div className="loading-state">
@@ -335,7 +351,12 @@ export default function App() {
               )}
             </div>
           ) : (
-            <>
+            <motion.div
+              key={view}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            >
               {view === 'exchange' && (
                 <div className="exchange-layout">
                   <div className="exchange-main">
@@ -487,8 +508,13 @@ export default function App() {
                           {latestRun.candidates.map((c, i) => {
                             const selected = c.id === candidate?.id;
                             return (
-                              <button
+                              <motion.button
                                 key={c.id}
+                                layout
+                                initial={{ opacity: 0, y: 14 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.06, duration: 0.35 }}
+                                whileHover={{ y: -2 }}
                                 disabled={busy}
                                 className={`opportunity ${selected ? 'selected' : ''}`}
                                 onClick={() => {
@@ -552,7 +578,7 @@ export default function App() {
                                     ))}
                                   </div>
                                 ) : null}
-                              </button>
+                              </motion.button>
                             );
                           })}
                         </div>
@@ -757,7 +783,7 @@ export default function App() {
                   </div>
                 </section>
               )}
-            </>
+            </motion.div>
           )}
         </main>
         <footer className="app-footer">

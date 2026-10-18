@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { motion } from 'motion/react';
 import { ArrowUpRight, CircleDot, Maximize2 } from 'lucide-react';
 import type { Agency, GraphEdge, LoopStats } from '../../shared/types';
 import { serviceNames } from '../../shared/types';
@@ -113,14 +114,16 @@ export default function Network({
               x2 = q.x - ux * 57,
               y2 = q.y - uy * 37;
             return (
-              <path
-                key={from.id + to.id}
+              <motion.path
+                key={from.id + to.id + (active ? ':selected' : '')}
+                initial={active ? { pathLength: 0, opacity: 1 } : { opacity: 0 }}
+                animate={{ pathLength: 1, opacity: available ? (active ? 1 : 0.55) : 0.25 }}
+                transition={{ duration: active ? 0.7 : 0.4, ease: 'easeInOut' }}
                 d={`M${x1},${y1} Q${(x1 + x2) / 2 - uy * 20},${(y1 + y2) / 2 + ux * 20} ${x2},${y2}`}
                 fill="none"
                 stroke={active ? '#7168db' : '#c6c9dd'}
                 strokeWidth={active ? 2.8 : 1.3}
                 strokeDasharray={!available ? '5 5' : undefined}
-                opacity={available ? (active ? 1 : 0.55) : 0.25}
                 markerEnd={`url(#arrow-${active ? 'selected' : 'muted'})`}
               />
             );
@@ -140,10 +143,20 @@ export default function Network({
         {agencies.map((a) => {
           const p = positions.get(a.id)!;
           return (
-            <button
+            <motion.button
               key={a.id}
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: selectedIds.includes(a.id) ? 1.06 : 1 }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 22 }}
               className={`network-node ${selectedIds.includes(a.id) ? 'selected' : ''} ${!a.active ? 'unavailable' : ''}`}
-              style={{ left: `${(p.x / 760) * 100}%`, top: `${(p.y / canvasHeight) * 100}%` }}
+              style={{
+                left: `${(p.x / 760) * 100}%`,
+                top: `${(p.y / canvasHeight) * 100}%`,
+                x: '-50%',
+                y: '-50%',
+              }}
               onClick={() => onSelectAgency(a)}
               aria-label={`View ${a.name}${loops?.keystoneIds.includes(a.id) ? ', keystone: every loop runs through it' : ''}`}
             >
@@ -155,7 +168,7 @@ export default function Network({
                   ? 'Unavailable'
                   : `${Math.max(0, a.capacityHours - a.reservedHours - a.committedHours)}h available`}
               </span>
-            </button>
+            </motion.button>
           );
         })}
       </div>

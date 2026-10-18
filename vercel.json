@@ -1,5 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "vite build",
-  "functions": { "src/index.ts": { "maxDuration": 90 } }
+  "functions": { "src/index.ts": { "maxDuration": 90 } },
+  "rewrites": [
+    { "source": "/app", "destination": "/index.html" },
+    { "source": "/app/:path*", "destination": "/index.html" },
+    { "source": "/docs", "destination": "/index.html" }
+  ]
 }

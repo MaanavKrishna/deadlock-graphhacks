@@ -3072,3 +3072,17 @@ time {
 .growth-rest {
   color: var(--muted);
 }
+
+.approval-meter {
+  height: 8px;
+  border-radius: 99px;
+  background: #eceef2;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.approval-meter i {
+  display: block;
+  height: 100%;
+  background: var(--purple);
+  border-radius: 99px;
+}
