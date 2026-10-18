@@ -1,4 +1,3 @@
-import { BinaryManager, ConfigGenerator, ServerManager } from 'falkordblite';
 import { FalkorDB, type Graph } from 'falkordb';
 import { mkdir, readFile, open, unlink } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
@@ -37,6 +36,8 @@ export async function openGraph(
     throw error;
   }
   try {
+    // Loaded lazily so remote/serverless deployments never touch the embedded binaries.
+    const { BinaryManager, ConfigGenerator, ServerManager } = await import('falkordblite');
     const manager = new BinaryManager();
     const bins = await manager.ensureBinaries();
     const modulePath = process.env.FALKORDB_MODULE_PATH ?? bins.falkordbModulePath;

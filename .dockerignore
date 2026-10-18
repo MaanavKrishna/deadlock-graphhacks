@@ -6,3 +6,5 @@ node_modules
 artifacts
 .playwright-mcp
 dist
+public
+.vercel

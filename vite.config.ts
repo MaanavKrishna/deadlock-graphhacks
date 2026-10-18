@@ -5,5 +5,7 @@ export default defineConfig({
   server: {
     watch: { usePolling: true, interval: 250, ignored: ['**/.data/**', '**/artifacts/**'] },
   },
-  build: { outDir: 'dist' },
+  // Built assets land in public/ so Vercel's CDN serves them next to the Express function.
+  publicDir: 'static',
+  build: { outDir: 'public', emptyOutDir: true },
 });

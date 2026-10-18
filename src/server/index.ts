@@ -17,8 +17,8 @@ const store = await Store.open({
 const app = createApp(store);
 let vite: Awaited<ReturnType<(typeof import('vite'))['createServer']>> | undefined;
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(resolve('dist')));
-  app.get('/{*path}', (_req, res) => res.sendFile(resolve('dist/index.html')));
+  app.use(express.static(resolve('public')));
+  app.get('/{*path}', (_req, res) => res.sendFile(resolve('public/index.html')));
 } else {
   const { createServer } = await import('vite');
   vite = await createServer({ server: { middlewareMode: true }, appType: 'spa' });
