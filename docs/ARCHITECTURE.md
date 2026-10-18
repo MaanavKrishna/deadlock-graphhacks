@@ -15,6 +15,8 @@ flowchart TD
   Runner -->|validated terms| Store
 ```
 
+The frontend has three routes served by one SPA: `/` (landing), `/docs` and `/app` (workspace). `src/client/router.tsx` is a minimal history router; Express and Vercel rewrites serve `index.html` for them. Motion comes from `motion/react` with `MotionConfig reducedMotion="user"`. The network view draws FalkorDB's `CAN_SERVE` edges; selected loops animate with path drawing and SVG `animateMotion` particles.
+
 `src/shared/types.ts` is the API/domain contract. The browser never connects to the database or receives model credentials. Vite is middleware in the same Node process during development. Production serves the Vite build through Express.
 
 ## Graph ownership
@@ -107,6 +109,9 @@ The Memory UI compares persisted outcomes only when ordered cycle, actual execut
 - `src/server/showcase.ts`: heterogeneous ten-agency challenge.
 - `src/server/seed.ts`: authored synthetic agency data.
 - `src/client/App.tsx`: workspace orchestration and API state.
+- `src/client/site/`: landing and docs pages.
+- `src/client/components/StatsRow.tsx`: animated network-health tiles.
+- `src/server/tools.ts`, `src/server/ask.ts`, `src/mcp.ts`: graph tools, the Ask agent and the MCP server.
 - `src/client/components/`: network, negotiation, directory and history UI.
 
 ## Beyond the prototype

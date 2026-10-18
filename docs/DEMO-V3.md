@@ -1,6 +1,6 @@
 # Deadlock v0.3 demo script (3:00)
 
-Record at 1440×900 in the browser, starter workspace freshly reset (**Guide & settings → Reset**), live model configured. Narrate in your own voice. Each beat lists what to click and what to say.
+Record at 1440×900. Open with 5 seconds on the landing page (`/`): the loop draws itself. Then click **Open the app**, with the example network freshly loaded (**Settings → Replace workspace**) and a live model configured. Narrate in your own voice. Each beat lists what to click and what to say.
 
 ## 0:00–0:20 — The problem
 - **Show:** Exchange desk, network with 6 agencies.
@@ -19,7 +19,7 @@ Record at 1440×900 in the browser, starter workspace freshly reset (**Guide & s
 ## 1:20–1:45 — What breaks if someone leaves
 - **Click:** Motionhaus on the network.
 - **Say:** "Before anyone withdraws, FalkorDB re-runs the traversal without Motionhaus. One of three loops breaks, this pending agreement and its held hours would be released, and Wordcraft and Studio North can still be routed."
-- **Click:** close the preview, then **Simulate withdrawal** in the room. Point out that the agreement is invalidated and the holds are released.
+- **Click:** close the preview, then **Pause an agency** in the drawer. Point out that the agreement is invalidated and the holds are released.
 
 ## 1:45–2:15 — Memory that learns
 - **Say:** "Memory works two ways. Members can teach a preference." Open Teach a scope preference and remember 8h for Studio North.

@@ -65,19 +65,29 @@ The first request seeds the starter network into the empty graph. Several functi
 
 The embedded data directory is locked against a second application process. After an unclean shutdown, a stale `.data/graph/.deadlock.lock` may remain; remove that file only after confirming no Deadlock process is using the directory. Normal Ctrl+C shutdown releases the lock automatically. Frontend development uses polling so updates also work in cloud-synced folders. Restart the server after backend edits.
 
-## Try the complete demo
+## The interface
+
+- **Landing page (`/`)** introduces the product: a self-drawing exchange loop, how it works, and what the graph does.
+- **Docs (`/docs`)** covers quickstart, graph model, core queries, agents, memory, Ask, MCP, the HTTP API and deployment.
+- **Workspace (`/app`)** is a command center with an icon rail, live FalkorDB and agent status, animated network-health tiles (active agencies, loops, keystone, hours held and committed), a dark graph stage where particles travel the selected loop, a spring-animated loop drawer, the agent log, approvals, Ask, Agencies, Activity and Memory.
+
+Motion uses [motion.dev](https://motion.dev) (`motion/react`) and respects the reduced-motion setting. The screens were designed on a Claude Design canvas first, then built in React.
+
+### Your own network or the example
+
+Choose **Start your own network** in the workspace menu (top bar). Guided setup counts you up to the three complementary agencies a first loop needs. **Example · 6 agencies** and **Challenge · 10 agencies** load clearly labeled synthetic networks. All three use the same graph, agents and approval flow.
+
+## Walkthrough
 
 1. Click **Discover exchanges**. Inspect the graph-generated opportunities and open **Graph evidence**.
 2. Select the opportunity containing **Motionhaus**, **Wordcraft**, and **Studio North**.
 3. Click **Start negotiation**. Open **Agent log** to inspect each representative's checks.
-4. Before approving, click **Simulate withdrawal**. Motionhaus becomes unavailable; the old agreement is invalidated and every hold is released.
+4. Before approving, click Motionhaus on the graph to preview what breaks if it leaves, then click **Pause an agency** in the drawer. Motionhaus becomes unavailable; the old agreement is invalidated and every hold is released.
 5. Click **Find another path**, select the **Frame Lab** cycle and negotiate. The agents counter to fit Frame Lab's eight-hour capacity.
 6. Approve separately for each member. The final approval commits all capacity in one graph transaction.
 7. Download the agreement and evidence. Reload; inspect **Activity**. Restart the server to verify durable memory.
 
-Choose **Workspace setup → New empty workspace**, confirm replacement, and use **Agencies** to enter your own agency offers/needs and constraints. This workspace stays empty across restarts until you add profiles. Live model mode is selected on reload when configured. Sample networks remain separately labeled.
-
-Use **Agencies** to create profiles or change hours, valuations, deadlines and availability. Use **Guide & settings → Reset demo workspace** for a fresh seeded network. Reset affects only the configured Deadlock graph.
+Use **Agencies** to create profiles or change hours, valuations, deadlines and availability. **Settings → Replace workspace** loads the example, the challenge or an empty network after confirmation; it affects only the configured Deadlock graph. An empty network stays empty across restarts until you add profiles. Live model mode is selected on reload when configured.
 
 ## Why FalkorDB is essential
 

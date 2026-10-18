@@ -27,3 +27,12 @@ Plan: docs/superpowers/plans/2026-10-18-agent-upgrade.md.
 
 - Public source published at https://github.com/MaanavKrishna/deadlock-graphhacks on branch main. Key scan checked all 62 publishable files with zero key matches; .env remains ignored. Final npm run check passes35 tests/typecheck/build; Prettier passes.
 - Narrated MP4 and source archive are release deliverables for v0.2.0. Participant source understanding, video review, and submission form remain human responsibilities.
+
+## v0.3 — 18 October 2026 (evening)
+
+- Graph-sourced network edges; compare-and-swap writes on the Workspace revision (cross-instance race test); `ACCESS_KEY` for workspace replacement, model negotiation and Ask; Vercel entrypoint with remote FalkorDB; unused advisor removed.
+- Withdrawal what-if traversal, keystone agencies, recruitment what-if (prediction verified against a real addition).
+- Self-learning memory: `TRADED_WITH` partner edges and `Insight` nodes that expire with the blocking profile revision.
+- Ask the network: eight fixed Cypher tools, citations limited to retrieved node ids, verified live with Claude Haiku 5.5. MCP server (`npm run mcp`) verified end to end with an MCP client.
+- Claude Design canvas for every screen; landing (`/`), docs (`/docs`) and workspace v2 (`/app`) built with motion.dev; product language and guided first-run setup in place of demo wording.
+- 45 tests, typecheck and production build pass; desktop (1440) and mobile (390) browser checks with no console errors and no horizontal scroll.

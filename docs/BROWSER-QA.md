@@ -27,3 +27,9 @@ The participant configured an ignored Anthropic key. Claude Haiku 5.5 actually c
 
 - Live custom-workspace browser journey entered Atlas Design, Beacon Motion and Cedar Copy through the editor. Actual graph discovery and live Haiku negotiation returned awaiting_approval with 10h each; workspace/export synthetic flags were false. These names are authored test profiles, not verified external companies.
 - Final narrated MP4: 180.13 seconds, H.264/AAC, 7,243,701 bytes. Six sampled frames inspected and non-silent audio verified (mean -16.1 dB, maximum -1.7 dB). Four-party live commitment and safe rejected loop are visible.
+
+## v0.3 checks (18 October 2026)
+
+- `/` landing at 1440 and 390: hero loop draws, scroll reveals trigger, no horizontal scroll.
+- `/docs`: section nav highlights the visible section; tables and code scroll inside their boxes.
+- `/app` at 1440 and 390: discover, select a loop (edges draw, particles travel), negotiate in policy mode, approve one member (meter animates), withdrawal impact preview, Ask answered live by Claude Haiku 5.5 with cited loops. No console errors or warnings.
