@@ -18,14 +18,14 @@ Tracks: **Agents That Act on Connected Data**, **Agent Memory and Coordination**
 | **Who to recruit next** | 1–2 hop path query for each missing offer/need profile predicts how many new loops it would open (prediction verified by test) | 01 |
 | **Watch agents negotiate live** | `POST /api/negotiate/stream` streams each representative tool call (NDJSON) as it happens; the drawer shows a live feed before the persisted deal arrives | 01 · 02 |
 | Agents act on the graph | Representatives inspect graph context and accept, counter or reject validated proposals; capacity is held only after all agree | 01 |
-| **Ask the network** | An agent chains seven fixed, parameterized Cypher tools and must cite the agency, deal, lesson or loop nodes it retrieved | 01 · 03 |
+| **Ask the network** | An agent chains nine fixed, parameterized graph tools (Cypher and FalkorDB algorithms) and must cite the agency, deal, lesson or loop nodes it retrieved | 01 · 03 |
 | **MCP server** | `npm run mcp` exposes the same graph tools plus discovery and negotiation to any MCP client | 01 |
 | Memory that changes terms | Human-taught `Lesson` nodes (`ABOUT`, `LEARNED_FROM`) produce remembered proposals; ablation proves the change | 02 |
 | **Memory that learns by itself** | Committed agreements write `TRADED_WITH` partner edges that lift proven loops; failed negotiations write `Insight` nodes that flag the loop until the blocking profile changes | 02 · 03 |
 | Shared state across instances | Every write is a compare-and-swap on the graph's workspace revision | 02 |
 | Decisions traced to source | Every decision is an `Event` node linked to its agreement and agency; `explain_deal` walks it | 03 |
 
-[Public source](https://github.com/MaanavKrishna/deadlock-graphhacks) · [Three-minute narrated video](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.2.0/deadlock-live-demo.mp4) · [Release and downloads](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/tag/v0.2.0)
+[Public source](https://github.com/MaanavKrishna/deadlock-graphhacks) · [v0.2 narrated walkthrough (earlier interface)](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.2.0/deadlock-live-demo.mp4) · [Release and downloads](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/tag/v0.2.0)
 
 ![Exchange desk: graph loops, keystone agency and recruitment what-if](docs/images/workspace.png)
 
@@ -54,7 +54,7 @@ npm run build
 npm start
 ```
 
-The local API binds to `127.0.0.1` by default. It is one shared workspace without per-user accounts. Per-client rate limits apply to the API (per 10 minutes: 1,200 reads, 120 writes, 20 AI requests; requests carrying the access key are exempt). Set `ACCESS_KEY` to require a key for workspace replacement and paid model negotiations; discovery, policy negotiation, approvals and profile edits remain open so visitors can try the exchange.
+The local API binds to `127.0.0.1` by default. It is one shared workspace without per-user accounts. The hosted workspace is a shared sandbox: anyone can discover, negotiate with policy agents, approve for members and edit profiles, so judges can try the full flow. Per-client rate limits apply to the API (per 10 minutes: 1,200 reads, 120 writes, 20 AI requests; requests carrying the access key are exempt). Set `ACCESS_KEY` to require a key for workspace replacement and paid model negotiations; discovery, policy negotiation, approvals and profile edits remain open so visitors can try the exchange.
 
 ### Hosted deployment (Vercel + FalkorDB Cloud)
 
@@ -227,7 +227,7 @@ Live testing also produced rejected negotiations. A repeated-inspection issue wa
 
 A separate browser journey entered Atlas Design, Beacon Motion and Cedar Copy through the profile editor, discovered their graph cycle, and completed a live Haiku negotiation with 10h per participant held for approval. Custom workspace and export metadata correctly identify user-entered profiles.
 
-The automated suite contains 50 tests, including live event streaming order and the NDJSON negotiation stream, including FalkorDB algorithm results (broker, PageRank, separate components), including the copyable evidence query reproducing every discovered loop, including withdrawal what-if traversal, keystone detection, recruitment predictions verified against real additions, self-learning partner edges and failure insights, the Ask agent's tool chaining and citation filtering over the real protocol, the MCP tool routes, including actual FalkorDB persistence, cross-instance revision conflicts, graph-sourced network edges, access-key protection, custom empty workspace reopen, model HTTP protocol, controlled memory comparison, concurrency and approvals. A local narrated recording shows real live-model evidence, graph traversal and working profile entry; narration uses a disclosed synthetic voice.
+The automated suite contains 51 tests against real FalkorDB instances. They cover policy limits, cycle discovery, contention and cross-instance revision conflicts, human approval transitions, invalidation, restart persistence, graph-sourced network edges, withdrawal what-ifs, keystones, recruitment predictions checked against real additions, FalkorDB algorithm results, the copyable evidence query for every loop, self-learning partner edges and failure insights, controlled memory comparison, the model HTTP protocol, live event streaming, the Ask agent's tool chaining and citation filtering, MCP tool routes, access-key protection and rate limiting. Browser checks cover desktop and mobile for the landing, docs and every workspace view.
 
 ## Project documentation
 

@@ -34,6 +34,6 @@ Record at 1440×900. Open with 5 seconds on the landing page (`/`): the loop dra
 
 ## 2:45–3:00 — Close
 - **Show:** README "What the graph does" table, or the Activity page.
-- **Say:** "Without FalkorDB there are no loops, no impact analysis, no memory and no answers. Deadlock is open source, with 45 tests, local setup and a hosted deployment path."
+- **Say:** "Without FalkorDB there are no loops, no impact analysis, no memory and no answers. Deadlock is open source, with 51 tests, local setup and a hosted deployment path."
 
 **Before publishing:** check that every number you say matches the screen, since live model choices can differ between runs. State on screen that agencies are synthetic.

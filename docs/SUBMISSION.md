@@ -5,7 +5,8 @@ Project: **Deadlock**. Team: **ContextSense**.
 ## Public links
 
 - Repository: https://github.com/MaanavKrishna/deadlock-graphhacks
-- Video: https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.2.0/deadlock-live-demo.mp4
+- Video (v0.3, current interface): [ADD NEW VIDEO URL]
+- Earlier v0.2 walkthrough: https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.2.0/deadlock-live-demo.mp4
 - Release/downloads: https://github.com/MaanavKrishna/deadlock-graphhacks/releases/tag/v0.2.0
 - Deployment: Vercel + FalkorDB Cloud configuration in README; complete local setup also documented. Live URL: [ADD AFTER DEPLOY]
 
@@ -27,7 +28,9 @@ Deadlock is a graph-native capacity exchange for small creative-agency communiti
 - [x] Synthetic data provenance.
 - [x] AI-assistance disclosure.
 - [x] Demo storyboard and recording script.
-- [x] Narrated three-minute recording of live model behavior (`artifacts/deadlock-live-demo.mp4`, disclosed synthetic voice).
+- [x] Earlier v0.2 narrated recording (`artifacts/deadlock-live-demo.mp4`, disclosed synthetic voice).
+- [ ] New v0.3 video recorded from `docs/DEMO-V3.md`.
+- [x] v0.3: landing, docs, workspace v2 with motion, FalkorDB algorithms, withdrawal what-if, recruitment what-if, self-learning memory, Ask with sources, MCP server, live negotiation streaming, compare-and-swap writes, access key, rate limits.
 - [x] Automated tests plus desktop/mobile browser verification.
 - [x] Docker configuration supplied (native setup is the tested path).
 
