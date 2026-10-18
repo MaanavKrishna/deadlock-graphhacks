@@ -126,3 +126,28 @@ it('serves read-only graph tools for MCP clients and rejects unknown tools', asy
     400,
   );
 });
+it('streams a negotiation as NDJSON ending with the persisted deal', async () => {
+  const run = await request(app).post('/api/discover').send({});
+  const response = await request(app)
+    .post('/api/negotiate/stream')
+    .send({ runId: run.body.id, agencyIds: run.body.candidates[0].agencyIds, mode: 'policy' });
+  expect(response.status).toBe(200);
+  expect(response.headers['content-type']).toContain('application/x-ndjson');
+  const lines = response.text
+    .trim()
+    .split('\n')
+    .map((l) => JSON.parse(l));
+  const last = lines.at(-1);
+  expect(last.type).toBe('deal');
+  expect(last.deal.status).toBe('awaiting_approval');
+  const bad = await request(app)
+    .post('/api/negotiate/stream')
+    .send({ runId: 'missing', agencyIds: ['a', 'b', 'c'] });
+  expect(
+    bad.text
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l))
+      .at(-1).type,
+  ).toBe('error');
+});

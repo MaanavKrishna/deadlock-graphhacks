@@ -114,6 +114,46 @@ export function createApp(store: Store, options: { accessKey?: () => string | un
       }),
     );
   });
+  // Same negotiation, streamed: one JSON line per representative decision as it happens,
+  // then the persisted deal (or an error) as the last line.
+  app.post('/api/negotiate/stream', async (req, res) => {
+    const body = z
+      .object({
+        runId: z.string().min(1).max(80),
+        mode: z.enum(['policy', 'model']).optional(),
+        useMemory: z.boolean().optional(),
+        agencyIds: z
+          .array(z.string().min(1).max(80))
+          .min(3)
+          .max(4)
+          .refine((ids) => new Set(ids).size === ids.length, 'Agencies must be distinct'),
+      })
+      .parse(req.body);
+    if (body.mode === 'model') requireKey(req);
+    res.status(200);
+    res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+    const send = (line: unknown) => res.write(JSON.stringify(line) + '\n');
+    try {
+      const deal = await store.negotiate(
+        body.runId,
+        body.agencyIds,
+        { mode: body.mode, useMemory: body.useMemory },
+        (event) => send({ type: 'event', event }),
+      );
+      send({ type: 'deal', deal });
+    } catch (error) {
+      send({
+        type: 'error',
+        error:
+          error instanceof DomainError
+            ? error.message
+            : 'The negotiation could not finish. Nothing was reserved.',
+      });
+    }
+    res.end();
+  });
   app.post('/api/deals/:id/approve', async (req, res) => {
     const { agencyId } = z.object({ agencyId: z.string().min(1).max(80) }).parse(req.body);
     res.json(await store.approve(req.params.id, agencyId));

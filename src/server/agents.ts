@@ -86,10 +86,20 @@ export async function runAgents(
   agencies: Agency[],
   proposals: Proposal[],
   decide: (c: AgentContext, signal?: AbortSignal) => Promise<AgentDecision>,
-  options: { lessons?: Lesson[]; useMemory?: boolean; timeoutMs?: number } = {},
+  options: {
+    lessons?: Lesson[];
+    useMemory?: boolean;
+    timeoutMs?: number;
+    // Called as each decision happens, so clients can watch the negotiation live.
+    onEvent?: (e: NegotiationResult['events'][number]) => void;
+  } = {},
 ): Promise<NegotiationResult> {
   let current = proposals[0];
   const events: NegotiationResult['events'] = [];
+  const emit = (e: NegotiationResult['events'][number]) => {
+    events.push(e);
+    options.onEvent?.(e);
+  };
   let round = 0;
   const reportedModels = new Set<string>();
   let modelIdentityKnown = true;
@@ -146,7 +156,7 @@ export async function runAgents(
           const e = event(agency.id, round, 'inspect', trace.reason);
           e.tool = trace.tool;
           e.evidenceIds = trace.evidenceIds;
-          events.push(e);
+          emit(e);
         }
         if (!['accept_offer', 'counter_offer', 'reject_offer'].includes(decision.tool))
           return reject('Unknown representative tool.', agency.id);
@@ -163,7 +173,7 @@ export async function runAgents(
           options.useMemory === false
             ? []
             : (options.lessons ?? []).filter((l) => l.agencyId === agency.id).map((l) => l.id);
-        events.push(e);
+        emit(e);
         if (decision.tool === 'reject_offer') return reject(decision.reason, agency.id);
         if (decision.tool === 'counter_offer') {
           const next = proposals.find((p) => p.id === decision.proposalId);
@@ -176,7 +186,7 @@ export async function runAgents(
           seen.add(next.id);
           accepted.clear();
           countered = true;
-          events.push(
+          emit(
             event(
               'coordinator',
               round,

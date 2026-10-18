@@ -76,6 +76,7 @@ The embedded engine uses append-only persistence with `appendfsync always`; Redi
 | GET | `/api/health` | Database/agent status; graph read verifies connectivity |
 | GET | `/api/state` | Profiles, `CAN_SERVE` edges read from FalkorDB (drawn by the network view), agreements, runs, mode |
 | POST | `/api/discover` | Persisted graph search with candidate cycles |
+| POST | `/api/negotiate/stream` | Same body; NDJSON lines `{type:'event'}` per decision, then `{type:'deal'}` or `{type:'error'}` |
 | POST | `/api/negotiate` | `{runId, agencyIds, mode?, useMemory?}` -> negotiated deal and events |
 | POST | `/api/deals/:id/lessons` | `{agencyId, preferredHours}` -> source-backed participant feedback |
 | POST | `/api/deals/:id/approve` | `{agencyId}` -> one sandbox member approval |

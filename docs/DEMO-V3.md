@@ -14,7 +14,7 @@ Record at 1440×900. Open with 5 seconds on the landing page (`/`): the loop dra
 
 ## 0:45–1:20 — Agents act, humans approve
 - **Click:** the Motionhaus / Wordcraft / Studio North loop. Point at **Why the graph found this loop**: each hop is an OFFERS/NEEDS match, and the copyable query reproduces the loop in FalkorDB.
-- **Click:** **Start negotiation** in Live model mode. Open the Agent log.
+- **Click:** **Start negotiation** in Live model mode. The live feed streams each Claude tool call as it happens; afterwards open the Agent log.
 - **Say:** "Each agency has its own Claude representative. It must call `inspect_exchange`, then accept, counter to a pre-validated proposal, or reject. The server re-checks capacity, deadlines and value balance, then holds capacity. Nothing commits until every member approves." Approve one member.
 
 ## 1:20–1:45 — What breaks if someone leaves

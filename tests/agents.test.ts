@@ -79,3 +79,20 @@ describe('bounded representative actions', () => {
     ).toBe(false);
   });
 });
+it('reports each decision live, in order, before the negotiation resolves', async () => {
+  const seen: string[] = [];
+  let resolved = false;
+  const result = await runAgents(
+    agencies(),
+    buildProposals(agencies()),
+    async () => {
+      expect(resolved).toBe(false);
+      return { tool: 'accept_offer', reason: 'Works for us.' };
+    },
+    { onEvent: (e) => seen.push(e.id) },
+  );
+  resolved = true;
+  expect(result.accepted).toBe(true);
+  expect(seen).toEqual(result.events.map((e) => e.id));
+  expect(seen.length).toBeGreaterThanOrEqual(3);
+});

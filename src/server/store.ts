@@ -12,6 +12,7 @@ import type {
   Insight,
   GrowthOption,
   NetworkStructure,
+  NegotiationEvent,
 } from '../shared/types';
 import { services } from '../shared/types';
 import { canonicalCycle, event, negotiate as negotiateTerms } from './negotiation';
@@ -509,7 +510,12 @@ RETURN [n IN nodes(p) | n.id] AS ids LIMIT 500`,
       return run;
     });
   }
-  async negotiate(runId: string, ids: string[], options: NegotiationOptions = {}): Promise<Deal> {
+  async negotiate(
+    runId: string,
+    ids: string[],
+    options: NegotiationOptions = {},
+    onEvent?: (e: NegotiationEvent) => void,
+  ): Promise<Deal> {
     return this.exclusive(async () => {
       const state = await this.read(),
         run = state.runs.find((r) => r.id === runId);
@@ -546,7 +552,7 @@ RETURN [n IN nodes(p) | n.id] AS ids LIMIT 500`,
               mode === 'model'
                 ? (context, signal) => decideWithModel(context, config!, signal)
                 : decideWithPolicy,
-              { lessons, useMemory },
+              { lessons, useMemory, onEvent },
             )
           : policyResult;
       const memoryParams = Object.fromEntries(ids.map((id, i) => [`member${i}`, id]));

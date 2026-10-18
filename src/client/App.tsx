@@ -25,9 +25,9 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import type { Agency, Candidate, Deal, Run, Snapshot } from '../shared/types';
+import type { Agency, Candidate, Deal, NegotiationEvent, Run, Snapshot } from '../shared/types';
 import { serviceNames } from '../shared/types';
-import { api } from './api';
+import { api, streamNegotiation } from './api';
 import Network, { Avatar } from './components/Network';
 import NegotiationRoom from './components/NegotiationRoom';
 import AgencyDirectory, { AgencyEditor } from './components/AgencyDirectory';
@@ -36,6 +36,7 @@ import MemoryView from './components/MemoryView';
 import AskView from './components/AskView';
 import GrowthCard from './components/GrowthCard';
 import StatsRow from './components/StatsRow';
+import LiveFeed from './components/LiveFeed';
 import StructureCard from './components/StructureCard';
 
 type View = 'exchange' | 'ask' | 'agencies' | 'history' | 'memory' | 'guide';
@@ -89,6 +90,8 @@ export default function App() {
   }, []);
   const [candidate, setCandidate] = useState<Candidate>();
   const [dealId, setDealId] = useState<string | undefined>(dealFromUrl);
+  const [liveEvents, setLiveEvents] = useState<NegotiationEvent[]>([]);
+  const [streaming, setStreaming] = useState(false);
   // Keep the open agreement in the address (/app?deal=…) so it can be shared or reopened.
   useEffect(() => {
     if (!window.location.pathname.startsWith('/app')) return;
@@ -149,14 +152,19 @@ export default function App() {
   }
   async function startNegotiation() {
     if (!candidate || !latestRun) return;
+    setLiveEvents([]);
+    setStreaming(true);
     const d = await action(() =>
-      api<Deal>('/negotiate', {
-        runId: latestRun.id,
-        agencyIds: candidate.agencyIds,
-        mode: agentMode,
-        useMemory,
-      }),
-    );
+      streamNegotiation<NegotiationEvent, Deal>(
+        {
+          runId: latestRun.id,
+          agencyIds: candidate.agencyIds,
+          mode: agentMode,
+          useMemory,
+        },
+        (e) => setLiveEvents((list) => [...list, e]),
+      ),
+    ).finally(() => setStreaming(false));
     if (d) {
       setDealId(d.id);
       setCandidate(undefined);
@@ -671,6 +679,9 @@ export default function App() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 28 }}
                   >
+                    {streaming && (
+                      <LiveFeed events={liveEvents} agencies={state.agencies} mode={agentMode} />
+                    )}
                     <NegotiationRoom
                       candidate={candidate}
                       deal={deal}
