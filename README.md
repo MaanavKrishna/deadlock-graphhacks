@@ -58,7 +58,7 @@ The local API binds to `127.0.0.1` by default. It is one shared workspace withou
 
 ### Hosted deployment (Vercel + FalkorDB Cloud)
 
-`src/index.ts` exports the same Express API for Vercel's Node runtime, and Vite builds the frontend into `public/` for the CDN. Create a FalkorDB Cloud instance, import this repository in Vercel, and set these environment variables in the Vercel project (never in Git):
+`src/server/vercel.ts` (bundled by `npm run build:api` into the committed `api/index.js`) exports the same Express API for Vercel's Node runtime, and Vite builds the frontend into `public/` for the CDN. Create a FalkorDB Cloud instance, import this repository in Vercel, and set these environment variables in the Vercel project (never in Git):
 
 - `FALKORDB_URL` — the instance's `rediss://…` connection string (required)
 - `ACCESS_KEY` — key for workspace replacement and model runs (strongly recommended)

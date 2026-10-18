@@ -105,7 +105,7 @@ The Memory UI compares persisted outcomes only when ordered cycle, actual execut
 - `src/server/store.ts`: discovery, memory, agreement transitions and atomic writes.
 - `src/server/api.ts`: JSON input validation, same-origin checks and error boundaries.
 - `src/server/model.ts`: Chat Completions-compatible inspection and decision tools.
-- `src/index.ts`: Vercel entrypoint (remote FalkorDB).
+- `src/server/vercel.ts` → `api/index.js` (esbuild bundle): Vercel entrypoint (remote FalkorDB).
 - `src/server/agents.ts`: feasible proposal menu and bounded coordination.
 - `src/server/showcase.ts`: heterogeneous ten-agency challenge.
 - `src/server/seed.ts`: authored synthetic agency data.
