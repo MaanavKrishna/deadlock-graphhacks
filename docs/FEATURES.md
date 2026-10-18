@@ -1,10 +1,12 @@
 # Deadlock feature scope
 
-The binding product design is [the design](superpowers/specs/2026-10-18-deadlock-design.md).
+The original product design is [the design](superpowers/specs/2026-10-18-deadlock-design.md).
 
 ## Included in this build
 
-Graph-discovered three/four-party exchanges; bounded policy-agent negotiation; explicit per-agency human approval; atomic cycle commitment; capacity holds and release; agency create/edit and availability; participant withdrawal and graph-based rerouting; persistent negotiation history; graph/query evidence; JSON agreement export; responsive exchange desk; seeded synthetic company network; local and Docker setup; domain, integration and browser checks.
+Graph-discovered three/four-party exchanges; bounded live model or policy-agent negotiation; actual inspection/accept/counter/reject tools; source-backed learned scope preferences; controlled memory comparison; heterogeneous ten-agency challenge; explicit per-agency human approval; atomic cycle commitment; capacity holds and release; agency create/edit and availability; participant withdrawal and graph-based rerouting; persistent negotiation history; graph/query evidence; JSON agreement export; responsive exchange desk; seeded synthetic company network; local and Docker setup; domain, integration and browser checks.
+
+The agent upgrade is specified in [the upgrade design](superpowers/specs/2026-10-18-agent-upgrade-design.md).
 
 ## Acceptance journey
 

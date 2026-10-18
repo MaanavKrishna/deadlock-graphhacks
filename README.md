@@ -2,13 +2,15 @@
 
 **A connected deal where a direct swap cannot work.** Built by team **ContextSense** for Graph Hacks.
 
-Deadlock lets fictional creative agencies exchange spare capacity in three- or four-party agreements. One agency's offer meets another's need; FalkorDB finds the cycle that closes the exchange. Autonomous policy representatives negotiate hours under explicit constraints. Humans approve each participant before the complete cycle commits.
+Deadlock lets fictional creative agencies exchange spare capacity in three- or four-party agreements. One agency's offer meets another's need; FalkorDB finds the cycle that closes the exchange. Live model representatives inspect graph context, accept, counter or reject validated proposals. A key-free policy simulation is also available. Humans approve each participant before the complete cycle commits.
 
 Tracks: **Agents That Act on Connected Data** and **Agent Memory and Coordination**.
 
+![Live Claude negotiation with user-entered profiles](docs/images/workspace.png)
+
 ## Run locally
 
-Requirements: Node.js **22.12 or later** and npm. Native embedded operation supports **macOS Apple Silicon** and **Linux x64**. Other platforms can connect to a Docker/cloud FalkorDB instance. An API key is **not required**.
+Requirements: Node.js **22.12 or later** and npm. Native embedded operation supports **macOS Apple Silicon** and **Linux x64**. Other platforms can connect to a Docker/cloud FalkorDB instance. A Claude API key enables live representatives. Policy simulation runs without a key.
 
 On macOS, the bundled FalkorDB module links Homebrew's OpenMP and OpenSSL libraries. Install them first if missing: `brew install libomp openssl@3`. `npm run doctor` checks that the engine can actually load and answer a query.
 
@@ -31,7 +33,7 @@ npm start
 
 The local API binds to `127.0.0.1` by default. This is a single-workspace sandbox with no user authentication. Add authentication and authorization before exposing its mutation routes on a public host.
 
-The embedded data directory is locked against a second application process. After an unclean shutdown, a stale `.data/graph/.deadlock.lock` may remain; remove that file only after confirming no Deadlock process is using the directory. Normal Ctrl+C shutdown releases the lock automatically. Development uses polling so updates also work in cloud-synced folders.
+The embedded data directory is locked against a second application process. After an unclean shutdown, a stale `.data/graph/.deadlock.lock` may remain; remove that file only after confirming no Deadlock process is using the directory. Normal Ctrl+C shutdown releases the lock automatically. Frontend development uses polling so updates also work in cloud-synced folders. Restart the server after backend edits.
 
 ## Try the complete demo
 
@@ -43,11 +45,13 @@ The embedded data directory is locked against a second application process. Afte
 6. Approve separately for each member. The final approval commits all capacity in one graph transaction.
 7. Download the agreement and evidence. Reload; inspect **Activity**. Restart the server to verify durable memory.
 
+Choose **Workspace setup → New empty workspace**, confirm replacement, and use **Agencies** to enter your own agency offers/needs and constraints. This workspace stays empty across restarts until you add profiles. Live model mode is selected on reload when configured. Sample networks remain separately labeled.
+
 Use **Agencies** to create profiles or change hours, valuations, deadlines and availability. Use **Guide & settings → Reset demo workspace** for a fresh seeded network. Reset affects only the configured Deadlock graph.
 
 ## Why FalkorDB is essential
 
-There is no in-memory matching fallback or hardcoded runtime cycle. Typed offers and needs derive directed compatibility edges **inside FalkorDB**. A Cypher variable-length path query discovers closed paths of three or four agencies. The result controls who can negotiate. Graph relationships also retrieve earlier agreements as context for representatives. Profiles, reservations, approvals, events and history persist in FalkorDB.
+There is no in-memory matching fallback or hardcoded runtime cycle. Typed offers and needs derive directed compatibility edges **inside FalkorDB**. A Cypher variable-length path query discovers closed paths of three or four agencies. The result controls who can negotiate. Graph relationships also retrieve earlier agreements as context for representatives. Profiles, reservations, approvals, events, source-backed lessons and history persist in FalkorDB.
 
 ```cypher
 MATCH p=(a:Agency)-[:CAN_SERVE*3..4]->(a)
@@ -69,13 +73,16 @@ graph LR
   D -->|FROM_RUN| R[Run]
   D -->|HAS_EVENT| E[Event]
   E -->|BY| A
+  L[Lesson] -->|ABOUT| A
+  L -->|LEARNED_FROM| D
 ```
 
 - **Agency:** offer, need, capacity, held/committed hours, valuation, minimum/requested hours, deadlines, availability and revision.
 - **Service:** exact shared taxonomy: design, video, copy, development.
 - **Run:** actual discovery query, returned candidates, timestamp and duration.
 - **Deal:** immutable participant/terms snapshot, lifecycle status, member approvals and negotiation events.
-- **Event:** actor, round, action, explanation and timestamp; connected to its deal and actor.
+- **Event:** actor, round, actual tool/proposal, evidence IDs, public justification and timestamp.
+- **Lesson:** explicit participant feedback, preferred scope, active/superseded state, source agreement and agency.
 
 Readable JSON properties preserve complete snapshots; explicit nodes and relationships power matching, memory and provenance. See [all queries](docs/QUERIES.cypher) and [architecture](docs/ARCHITECTURE.md).
 
@@ -87,11 +94,36 @@ A stable agreement holds capacity and enters `awaiting_approval`. Each participa
 
 Mutations are serialized in **one Node server process**, and each mutation is one atomic Cypher write. The prototype replaces its small graph snapshot per mutation; it is not optimized for an unbounded exchange marketplace. Do not run multiple application processes against the same graph. There is no distributed lock, automatic reservation expiry, real identity verification, escrow or payment system.
 
-### Optional language-model advisor
+### Live model representatives
 
-Copy `.env.example` to `.env` and set `MODEL_API_KEY`, `MODEL_NAME`, and optionally `MODEL_BASE_URL` for a compatible Chat Completions provider. Restart the server. The model receives the synthetic participants and policy outcome and writes a bounded explanation in the log. An eight-second timeout or invalid response falls back visibly to policy-only operation. Keys stay on the server.
+Copy `.env.example` to `.env` and configure `MODEL_API_KEY`, `MODEL_NAME`, and optionally `MODEL_BASE_URL` for a Chat Completions-compatible provider that supports function tools. Select **Live model agents** in the exchange desk. Configuration is reread on each operation; **Refresh configuration** updates the UI without restarting. Keys stay on the server and `.env` is ignored by Git.
 
-**The model does not negotiate terms, approve on behalf of a person, or execute commitments.** This is optional model assistance, not a claim that default negotiations are LLM-generated. No paid model call was necessary for the local verification.
+For **Claude Haiku 5.5** through Anthropic's compatibility endpoint:
+
+```dotenv
+MODEL_API_KEY=your-anthropic-api-key
+MODEL_NAME=claude-haiku-5-5
+MODEL_BASE_URL=https://api.anthropic.com/v1
+```
+
+The output budget is 2,048 tokens per request. No temperature or top-p override is sent. See [Anthropic compatibility documentation](https://platform.claude.com/docs/en/cli-sdks-libraries/libraries/openai-sdk) and [Haiku 5.5 model documentation](https://platform.claude.com/docs/en/models/haiku-5-5/overview).
+
+Each representative must actually call `inspect_exchange` before choosing `accept_offer`, `counter_offer` or `reject_offer`. Its context contains the graph-discovered path, current participant constraints, feasible proposal menu, and its own active lessons. A counter replaces the entire proposal vector and clears all earlier representative acceptances. Every member must accept the new terms again. The server revalidates all hard limits before holding capacity. Models cannot approve for humans.
+
+Decisions are bounded to three tool requests per representative turn, six negotiation rounds and a sixty-second overall budget. Each provider request has a twelve-second timeout. Errors, malformed tools, repeated counters and vetoes persist a rejected negotiation with zero new capacity holds. There is no silent policy fallback in model mode. Models choose among a small validated menu rather than invent arbitrary terms.
+
+### Prove memory changes behavior
+
+1. Use the **Starter** scenario and **Policy simulation**. Uncheck **Use learned preferences**, discover, then negotiate the Motionhaus / Wordcraft / Studio North cycle. Studio North receives **10h**.
+2. Open **Teach a scope preference**, choose Studio North and remember **8h**. This is explicit sandbox participant feedback, not automatically inferred satisfaction.
+3. Cancel the pending deal to release its holds. Enable learned preferences, discover the same cycle and negotiate again. Studio North's representative counters to the remembered **8h** scope; hard profiles stay unchanged.
+4. Open **Memory**. The comparison links both recorded agreements and the lesson's source. It appears only when path, mode, known provider-reported model identity, profiles and available capacity match exactly.
+
+Lessons persist across a database restart. Disabling memory restores the original requested terms. Infeasible preferences cannot override hard minimums, deadlines, credit balance or capacity. New feedback supersedes earlier feedback for the same agency.
+
+### The launch challenge
+
+Choose **Launch challenge · 10 agencies** and confirm the replacement. It includes unequal hourly valuations, constrained capacity, real four-party cycles through Shipyard and Signal Press, and Premiere's attractive but late delivery. The graph discovers Premiere's paths, but deadline checks reject them even when requested credit totals are higher. Scenario replacement clears existing agencies, lessons and history after confirmation.
 
 ## Docker or an external database
 
@@ -114,7 +146,19 @@ npm run build
 npm audit
 ```
 
-Tests start isolated real FalkorDB instances, so optional native binaries are required for the integration suite even when the app uses a remote database. Coverage includes policy counters and deadlines, graph cycle discovery, contention, human approval transitions, invalidation, cancellation, restart persistence, prior-context retrieval, API validation and model-response fallback. Browser checks cover desktop/mobile negotiation, withdrawal, rerouting, approvals, profile editing/creation, and reload. See [browser QA](docs/BROWSER-QA.md) and [progress](docs/PROGRESS.md) for verification records.
+Tests start isolated real FalkorDB instances, so optional native binaries are required for the integration suite even when the app uses a remote database. Coverage includes policy counters and deadlines, graph cycle discovery, contention, human approval transitions, invalidation, cancellation, restart persistence, prior-context retrieval, API validation, real HTTP tool protocol, model-selected reservations, safe model failure, restart-persistent learned preferences and controlled memory ablation. Browser checks cover desktop/mobile negotiation, withdrawal, rerouting, approvals, profile editing/creation, and reload. See [browser QA](docs/BROWSER-QA.md) and [progress](docs/PROGRESS.md) for verification records.
+
+![Recorded memory comparison](docs/images/memory.png)
+
+## Verified live behavior
+
+Claude Haiku 5.5 was tested through Anthropic's actual API. The baseline held 10h per participant. After explicit feedback preferring 8h, a live representative countered, every member accepted again, and the final proposal held 8h each. The Memory view links both outcomes under matching profiles, capacity and reported model identity. This is an observed model run, not a deterministic promise about future model choices.
+
+Live testing also produced rejected negotiations. A repeated-inspection issue was fixed with phase-specific tool menus and a regression test; an unmotivated model veto was preserved without capacity holds. Counter tools exclude current/visited proposals, and are omitted when no alternatives remain. The model now receives explicit semantics for aspirational requests, hard minimums and agency-specific remembered preferences. The server enforces safety independently of those explanations.
+
+A separate browser journey entered Atlas Design, Beacon Motion and Cedar Copy through the profile editor, discovered their graph cycle, and completed a live Haiku negotiation with 10h per participant held for approval. Custom workspace and export metadata correctly identify user-entered profiles.
+
+The automated suite contains 35 tests, including actual FalkorDB persistence, custom empty workspace reopen, model HTTP protocol, controlled memory comparison, concurrency and approvals. A local narrated recording shows real live-model evidence, graph traversal and working profile entry; narration uses a disclosed synthetic voice.
 
 ## Project documentation
 
@@ -129,7 +173,7 @@ Tests start isolated real FalkorDB instances, so optional native binaries are re
 
 ## Data provenance and AI assistance
 
-All agency profiles, relationships, valuations and transactions are authored synthetic fixtures. No private company data, personal records or restricted sources are loaded. The app sends no external messages.
+Included sample profiles, relationships, valuations and verification transactions are authored synthetic fixtures. Custom workspaces accept user-entered offers and constraints. No private company data, personal records or restricted sources are loaded. The app sends no external messages.
 
 OpenAI Codex assisted with ideation, scope, implementation, documentation and test execution. A separate Codex reviewer checked the design and implementation. The human participant must review, verify and understand the code, graph model, queries and technical decisions before submitting; the project does not claim that review has already happened.
 

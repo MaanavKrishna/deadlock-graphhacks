@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ArrowRight,
   Check,
@@ -28,28 +28,42 @@ type Props = {
   deal?: Deal;
   agencies: Agency[];
   busy: boolean;
+  sampleData: boolean;
   onNegotiate: () => void;
   onApprove: (id: string) => void;
   onCancel: () => void;
   onWithdraw: (a: Agency) => void;
   onReroute: () => void;
+  onRemember: (agencyId: string, hours: number) => void;
 };
 export default function NegotiationRoom({
   candidate,
   deal,
   agencies,
   busy,
+  sampleData,
   onNegotiate,
   onApprove,
   onCancel,
   onWithdraw,
   onReroute,
+  onRemember,
 }: Props) {
   const [tab, setTab] = useState<'agreement' | 'conversation'>('agreement');
   const members =
     deal?.participants ??
     candidate?.agencyIds.map((id) => agencies.find((a) => a.id === id)!).filter(Boolean) ??
     [];
+  const [teach, setTeach] = useState(false),
+    [scopeAgency, setScopeAgency] = useState(''),
+    [preferredHours, setPreferredHours] = useState(8);
+  useEffect(() => {
+    setTeach(false);
+    setScopeAgency(
+      deal?.agencyIds.includes('studio-north') ? 'studio-north' : (deal?.agencyIds[0] ?? ''),
+    );
+    setPreferredHours(8);
+  }, [deal?.id]);
   return (
     <aside className="room">
       <div className="room-heading">
@@ -94,6 +108,15 @@ export default function NegotiationRoom({
       ) : (
         <>
           <div className="room-summary">
+            {deal && (
+              <div className="execution-label">
+                {deal.executedMode === 'model'
+                  ? `Live model · ${deal.modelIdentityKnown ? deal.model : `${deal.requestedModel ?? 'unknown'} (requested; actual identity unavailable)`}`
+                  : 'Policy simulation'}
+                {deal.proposalId && ` · ${deal.proposalId} proposal`}
+                {` · memory ${deal.useMemory === false ? 'off' : 'on'}`}
+              </div>
+            )}
             <div className="avatar-stack">
               {members.map((a) => (
                 <Avatar key={a.id} agency={a} small />
@@ -218,7 +241,18 @@ export default function NegotiationRoom({
                         <span>{e.round === 0 ? 'Context' : `Round ${e.round}`}</span>
                       </div>
                       <span className={`action-label ${e.action}`}>{e.action}</span>
+                      {e.tool && (
+                        <code className="tool-label">
+                          {e.tool}
+                          {e.proposalId && `(${e.proposalId})`}
+                        </code>
+                      )}
                       <p>{e.reason}</p>
+                      {!!e.evidenceIds?.length && (
+                        <span className="lesson-citations">
+                          Evidence: {e.evidenceIds.map((id) => id.slice(0, 8)).join(', ')}
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -226,6 +260,56 @@ export default function NegotiationRoom({
             </div>
           )}
           <div className="room-actions">
+            {deal && (
+              <div className="teach-agent">
+                <button className="text-button" disabled={busy} onClick={() => setTeach(!teach)}>
+                  {teach ? 'Close learning form' : 'Teach a scope preference'}
+                </button>
+                {teach && (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      onRemember(scopeAgency, preferredHours);
+                    }}
+                  >
+                    <label>
+                      Participant
+                      <select
+                        aria-label="Lesson participant"
+                        value={scopeAgency}
+                        onChange={(e) => setScopeAgency(e.target.value)}
+                      >
+                        {members.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Prefer receiving at most (hours)
+                      <input
+                        aria-label="Preferred received hours"
+                        type="number"
+                        required
+                        min={0.25}
+                        max={1000}
+                        step={0.25}
+                        value={preferredHours}
+                        onChange={(e) => setPreferredHours(Number(e.target.value))}
+                      />
+                    </label>
+                    <button className="secondary" disabled={busy}>
+                      Remember preference
+                    </button>
+                    <p>
+                      This records participant feedback for future negotiations. Cancel pending
+                      proposals to free capacity before rerunning.
+                    </p>
+                  </form>
+                )}
+              </div>
+            )}
             {!deal && (
               <>
                 <div className="policy-note">
@@ -279,7 +363,7 @@ export default function NegotiationRoom({
                 <ShieldCheck size={19} />
                 <div>
                   <strong>All members approved</strong>
-                  <p>Capacity committed together in the sandbox.</p>
+                  <p>Capacity committed together in the workspace.</p>
                 </div>
               </div>
             )}
@@ -289,7 +373,9 @@ export default function NegotiationRoom({
                 Download agreement & evidence
               </a>
             )}
-            <p className="sandbox-note">Synthetic agencies. No money or services transferred.</p>
+            <p className="sandbox-note">
+              {sampleData ? 'Sample agencies. ' : ''}No money or services transferred.
+            </p>
           </div>
         </>
       )}

@@ -259,8 +259,8 @@ export function AgencyEditor({
           <span>Available for new exchanges</span>
         </label>
         <p className="form-help">
-          Credits are a shared comparison unit in this demo. They are not money. Value flexibility
-          limits how much more an agency gives than receives.
+          Credits are a shared comparison unit in this workspace. They are not money. Value
+          flexibility limits how much more an agency gives than receives.
         </p>
         <div className="modal-actions">
           <button type="button" className="secondary" disabled={busy} onClick={onClose}>

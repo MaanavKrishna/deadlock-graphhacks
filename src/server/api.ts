@@ -52,6 +52,8 @@ export function createApp(store: Store) {
     const body = z
       .object({
         runId: z.string().min(1).max(80),
+        mode: z.enum(['policy', 'model']).optional(),
+        useMemory: z.boolean().optional(),
         agencyIds: z
           .array(z.string().min(1).max(80))
           .min(3)
@@ -59,7 +61,12 @@ export function createApp(store: Store) {
           .refine((ids) => new Set(ids).size === ids.length, 'Agencies must be distinct'),
       })
       .parse(req.body);
-    res.json(await store.negotiate(body.runId, body.agencyIds));
+    res.json(
+      await store.negotiate(body.runId, body.agencyIds, {
+        mode: body.mode,
+        useMemory: body.useMemory,
+      }),
+    );
   });
   app.post('/api/deals/:id/approve', async (req, res) => {
     const { agencyId } = z.object({ agencyId: z.string().min(1).max(80) }).parse(req.body);
@@ -68,6 +75,12 @@ export function createApp(store: Store) {
   app.post('/api/deals/:id/cancel', async (req, res) =>
     res.json(await store.cancel(req.params.id)),
   );
+  app.post('/api/deals/:id/lessons', async (req, res) => {
+    const { agencyId, preferredHours } = z
+      .object({ agencyId: z.string().min(1).max(80), preferredHours: hours })
+      .parse(req.body);
+    res.status(201).json(await store.recordLesson(req.params.id, agencyId, preferredHours));
+  });
   app.put('/api/agencies/:id', async (req, res) => {
     const agency = agencySchema.parse(req.body);
     if (agency.id !== req.params.id)
@@ -85,8 +98,13 @@ export function createApp(store: Store) {
     res.status(201).json(await store.saveAgency(agency, true));
   });
   app.post('/api/reset', async (req, res) => {
-    z.object({ confirm: z.literal(true) }).parse(req.body);
-    res.json(await store.reset());
+    const body = z
+      .object({
+        confirm: z.literal(true),
+        scenario: z.enum(['starter', 'launch', 'empty']).optional(),
+      })
+      .parse(req.body);
+    res.json(await store.reset(body.scenario));
   });
   app.get('/api/deals/:id/export', async (req, res) => {
     const state = await store.snapshot(),
@@ -99,8 +117,8 @@ export function createApp(store: Store) {
     res.json({
       product: 'Deadlock',
       team: 'ContextSense',
-      synthetic: true,
-      notice: 'Sandbox capacity agreement. No services or money transferred.',
+      synthetic: state.synthetic,
+      notice: 'Capacity agreement record. No services or money transferred.',
       deal,
       run: state.runs.find((r) => r.id === deal.runId),
     });
@@ -108,13 +126,9 @@ export function createApp(store: Store) {
   app.use('/api', (_req, res) => res.status(404).json({ error: 'API route not found.' }));
   const errors: ErrorRequestHandler = (error, _req, res, _next) => {
     if (error instanceof z.ZodError)
-      return void res
-        .status(400)
-        .json({
-          error: error.issues
-            .map((i) => `${i.path.join('.') || 'Request'}: ${i.message}`)
-            .join('; '),
-        });
+      return void res.status(400).json({
+        error: error.issues.map((i) => `${i.path.join('.') || 'Request'}: ${i.message}`).join('; '),
+      });
     if (error instanceof DomainError)
       return void res.status(error.status).json({ error: error.message });
     if (error instanceof SyntaxError || error.status === 400)
@@ -122,12 +136,10 @@ export function createApp(store: Store) {
     if (error.status === 413)
       return void res.status(413).json({ error: 'Request is too large. Use a smaller profile.' });
     console.error('API operation failed:', error instanceof Error ? error.name : 'unknown');
-    res
-      .status(503)
-      .json({
-        error:
-          'The graph operation failed. Check the server and database, then retry. Your last successful state is preserved.',
-      });
+    res.status(503).json({
+      error:
+        'The graph operation failed. Check the server and database, then retry. Your last successful state is preserved.',
+    });
   };
   app.use(errors);
   return app;
