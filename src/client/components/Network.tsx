@@ -87,7 +87,7 @@ export default function Network({
               refY="3.5"
               orient="auto"
             >
-              <path d="M0,0 L7,3.5 L0,7" fill="#4a4d5e" />
+              <path d="M0,0 L7,3.5 L0,7" fill="#9a9db0" />
             </marker>
             <marker
               id="arrow-selected"
@@ -110,28 +110,34 @@ export default function Network({
               uy = dy / d;
             const active = selectedEdges.includes(`${from.id}:${to.id}`),
               available = from.active && to.active;
-            const x1 = p.x + ux * 49,
-              y1 = p.y + uy * 33,
-              x2 = q.x - ux * 57,
-              y2 = q.y - uy * 37;
+            // Leave and enter each card at its border (cards are ~88×73 viewBox units), so
+            // arrowheads stay visible instead of ending underneath the target card.
+            const border = Math.min(
+              Math.abs(ux) > 1e-6 ? 50 / Math.abs(ux) : Infinity,
+              Math.abs(uy) > 1e-6 ? 42 / Math.abs(uy) : Infinity,
+            );
+            const x1 = p.x + ux * border,
+              y1 = p.y + uy * border,
+              x2 = q.x - ux * (border + 6),
+              y2 = q.y - uy * (border + 6);
             const path = `M${x1},${y1} Q${(x1 + x2) / 2 - uy * 20},${(y1 + y2) / 2 + ux * 20} ${x2},${y2}`;
             return (
               <g key={from.id + to.id}>
                 <motion.path
                   key={from.id + to.id + (active ? ':selected' : '')}
                   initial={active ? { pathLength: 0, opacity: 1 } : { opacity: 0 }}
-                  animate={{ pathLength: 1, opacity: available ? (active ? 1 : 0.55) : 0.25 }}
+                  animate={{ pathLength: 1, opacity: available ? 1 : 0.35 }}
                   transition={{ duration: active ? 0.7 : 0.4, ease: 'easeInOut' }}
                   d={path}
                   fill="none"
-                  stroke={active ? '#8f8cf5' : '#3a3d4d'}
-                  strokeWidth={active ? 2.8 : 1.3}
+                  stroke={active ? '#8f8cf5' : '#7d8199'}
+                  strokeWidth={active ? 2.8 : 1.6}
                   strokeDasharray={!available ? '5 5' : undefined}
                   markerEnd={`url(#arrow-${active ? 'selected' : 'muted'})`}
                 />
                 {active && !reduce && (
                   <circle r={4} className="edge-particle">
-                    <animateMotion dur="1.8s" repeatCount="indefinite" path={path} begin="0.7s" />
+                    <animateMotion dur="1.8s" repeatCount="indefinite" path={path} />
                   </circle>
                 )}
               </g>

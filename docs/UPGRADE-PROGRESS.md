@@ -36,3 +36,6 @@ Plan: docs/superpowers/plans/2026-10-18-agent-upgrade.md.
 - Ask the network: eight fixed Cypher tools, citations limited to retrieved node ids, verified live with Claude Haiku 5.5. MCP server (`npm run mcp`) verified end to end with an MCP client.
 - Claude Design canvas for every screen; landing (`/`), docs (`/docs`) and workspace v2 (`/app`) built with motion.dev; product language and guided first-run setup in place of demo wording.
 - 45 tests, typecheck and production build pass; desktop (1440) and mobile (390) browser checks with no console errors and no horizontal scroll.
+- Network edges: all 8 `CAN_SERVE` edges were present in the graph and the DOM, but arrowheads ended under the taller cards, muted edges were too faint on the dark stage and the center label covered one edge. Endpoints now use rectangle intersection, edges are brighter, and the label sits beneath the wires.
+- Every workspace view has its own URL with Back/Forward support and per-page titles; agreements are linkable with `?deal=`. "Why this loop?" evidence panel with a copyable Cypher query, tested to reproduce every discovered loop. 46 tests pass.
+- Removed the `codex/deadlock` branch from GitHub; `main` is the default branch.

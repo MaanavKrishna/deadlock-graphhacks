@@ -38,11 +38,64 @@ import GrowthCard from './components/GrowthCard';
 import StatsRow from './components/StatsRow';
 
 type View = 'exchange' | 'ask' | 'agencies' | 'history' | 'memory' | 'guide';
+// Every workspace view has its own address, so views can be bookmarked, shared and
+// navigated with the browser's back and forward buttons.
+const viewPaths: Record<View, string> = {
+  exchange: '/app',
+  ask: '/app/ask',
+  agencies: '/app/agencies',
+  history: '/app/activity',
+  memory: '/app/memory',
+  guide: '/app/settings',
+};
+function viewFromPath(path: string): View {
+  const match = (Object.entries(viewPaths) as [View, string][]).find(
+    ([view, p]) => view !== 'exchange' && path.startsWith(p),
+  );
+  return match ? match[0] : 'exchange';
+}
+const dealFromUrl = () => new URLSearchParams(window.location.search).get('deal') ?? undefined;
 export default function App() {
   const [state, setState] = useState<Snapshot>();
-  const [view, setView] = useState<View>('exchange');
+  const [view, setViewState] = useState<View>(() => viewFromPath(window.location.pathname));
+  function setView(next: View) {
+    setViewState(next);
+    const target = viewPaths[next];
+    if (window.location.pathname !== target) {
+      window.history.pushState({}, '', target);
+      window.scrollTo({ top: 0 });
+    }
+  }
+  useEffect(() => {
+    const titles: Record<View, string> = {
+      exchange: 'Exchange desk',
+      ask: 'Ask the network',
+      agencies: 'Agencies',
+      history: 'Activity',
+      memory: 'Memory',
+      guide: 'Settings',
+    };
+    document.title = `${titles[view]} · Deadlock`;
+  }, [view]);
+  useEffect(() => {
+    const onPop = () => {
+      setViewState(viewFromPath(window.location.pathname));
+      const linked = dealFromUrl();
+      if (linked) setDealId(linked);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
   const [candidate, setCandidate] = useState<Candidate>();
-  const [dealId, setDealId] = useState<string>();
+  const [dealId, setDealId] = useState<string | undefined>(dealFromUrl);
+  // Keep the open agreement in the address (/app?deal=…) so it can be shared or reopened.
+  useEffect(() => {
+    if (!window.location.pathname.startsWith('/app')) return;
+    const url = new URL(window.location.href);
+    if (view === 'exchange' && dealId) url.searchParams.set('deal', dealId);
+    else url.searchParams.delete('deal');
+    if (url.href !== window.location.href) window.history.replaceState({}, '', url);
+  }, [dealId, view]);
   const [agentMode, setAgentMode] = useState<'policy' | 'model'>('policy');
   const [useMemory, setUseMemory] = useState(true);
   const [resetScenario, setResetScenario] = useState<'starter' | 'launch' | 'empty'>('starter');
@@ -59,7 +112,7 @@ export default function App() {
   async function refresh(initial = false) {
     const s = await api<Snapshot>('/state');
     setState(s);
-    if (initial && s.deals.length) setDealId(s.deals[0].id);
+    if (initial && !dealFromUrl() && s.deals.length) setDealId(s.deals[0].id);
     if (initial) setAgentMode(s.modelConfigured ? 'model' : 'policy');
     return s;
   }

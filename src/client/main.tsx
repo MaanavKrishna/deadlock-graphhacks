@@ -14,6 +14,10 @@ import './site/site.css';
 
 function Root() {
   const route = useRoute();
+  React.useEffect(() => {
+    if (route === 'landing') document.title = 'Deadlock · Three can trade where two can’t';
+    if (route === 'docs') document.title = 'Docs · Deadlock';
+  }, [route]);
   return (
     <MotionConfig reducedMotion="user">
       <AnimatePresence mode="wait">

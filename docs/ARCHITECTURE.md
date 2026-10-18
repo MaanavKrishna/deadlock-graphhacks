@@ -15,7 +15,7 @@ flowchart TD
   Runner -->|validated terms| Store
 ```
 
-The frontend has three routes served by one SPA: `/` (landing), `/docs` and `/app` (workspace). `src/client/router.tsx` is a minimal history router; Express and Vercel rewrites serve `index.html` for them. Motion comes from `motion/react` with `MotionConfig reducedMotion="user"`. The network view draws FalkorDB's `CAN_SERVE` edges; selected loops animate with path drawing and SVG `animateMotion` particles.
+The frontend has three routes served by one SPA: `/` (landing), `/docs` and `/app` (workspace). Workspace views map to `/app`, `/app/ask`, `/app/agencies`, `/app/activity`, `/app/memory` and `/app/settings`; `?deal=<id>` opens an agreement. `src/client/router.tsx` is a minimal history router; Express and Vercel rewrites serve `index.html` for them. Motion comes from `motion/react` with `MotionConfig reducedMotion="user"`. The network view draws FalkorDB's `CAN_SERVE` edges; selected loops animate with path drawing and SVG `animateMotion` particles.
 
 `src/shared/types.ts` is the API/domain contract. The browser never connects to the database or receives model credentials. Vite is middleware in the same Node process during development. Production serves the Vite build through Express.
 

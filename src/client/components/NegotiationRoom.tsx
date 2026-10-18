@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+import LoopEvidence from './LoopEvidence';
 import {
   ArrowRight,
   Check,
@@ -315,6 +316,7 @@ export default function NegotiationRoom({
                 )}
               </div>
             )}
+            {!deal && candidate && <LoopEvidence candidate={candidate} agencies={agencies} />}
             {!deal && (
               <>
                 <div className="policy-note">

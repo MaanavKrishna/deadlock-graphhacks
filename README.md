@@ -11,6 +11,7 @@ Tracks: **Agents That Act on Connected Data**, **Agent Memory and Coordination**
 | Capability | How FalkorDB does the work | Track |
 |---|---|---|
 | Find exchanges no pair can make | Variable-length cycle traversal over derived `CAN_SERVE` edges | 01 |
+| **Why this loop?** | Each hop shown as `(A)-[:OFFERS]→(service)←[:NEEDS]-(B)` with deadlines, plus a copyable Cypher query that reproduces the loop in FalkorDB (tested against every discovered loop) | 01 |
 | **What breaks if an agency leaves** | The same traversal re-run with that agency excluded: broken loops, affected agreements, held hours, who is still routable, who is stranded | 01 |
 | **Keystone agencies** | Agencies every current loop runs through, flagged on the network | 01 |
 | **Who to recruit next** | 1–2 hop path query for each missing offer/need profile predicts how many new loops it would open (prediction verified by test) | 01 |
@@ -69,7 +70,7 @@ The embedded data directory is locked against a second application process. Afte
 
 - **Landing page (`/`)** introduces the product: a self-drawing exchange loop, how it works, and what the graph does.
 - **Docs (`/docs`)** covers quickstart, graph model, core queries, agents, memory, Ask, MCP, the HTTP API and deployment.
-- **Workspace (`/app`)** is a command center with an icon rail, live FalkorDB and agent status, animated network-health tiles (active agencies, loops, keystone, hours held and committed), a dark graph stage where particles travel the selected loop, a spring-animated loop drawer, the agent log, approvals, Ask, Agencies, Activity and Memory.
+- **Workspace (`/app`)**: every view has its own address (`/app`, `/app/ask`, `/app/agencies`, `/app/activity`, `/app/memory`, `/app/settings`), an open agreement is linkable as `/app?deal=<id>`, and Back/Forward work. It is a command center with an icon rail, live FalkorDB and agent status, animated network-health tiles (active agencies, loops, keystone, hours held and committed), a dark graph stage where particles travel the selected loop, a spring-animated loop drawer, the agent log, approvals, Ask, Agencies, Activity and Memory.
 
 Motion uses [motion.dev](https://motion.dev) (`motion/react`) and respects the reduced-motion setting. The screens were designed on a Claude Design canvas first, then built in React.
 
@@ -224,7 +225,7 @@ Live testing also produced rejected negotiations. A repeated-inspection issue wa
 
 A separate browser journey entered Atlas Design, Beacon Motion and Cedar Copy through the profile editor, discovered their graph cycle, and completed a live Haiku negotiation with 10h per participant held for approval. Custom workspace and export metadata correctly identify user-entered profiles.
 
-The automated suite contains 45 tests, including withdrawal what-if traversal, keystone detection, recruitment predictions verified against real additions, self-learning partner edges and failure insights, the Ask agent's tool chaining and citation filtering over the real protocol, the MCP tool routes, including actual FalkorDB persistence, cross-instance revision conflicts, graph-sourced network edges, access-key protection, custom empty workspace reopen, model HTTP protocol, controlled memory comparison, concurrency and approvals. A local narrated recording shows real live-model evidence, graph traversal and working profile entry; narration uses a disclosed synthetic voice.
+The automated suite contains 46 tests, including the copyable evidence query reproducing every discovered loop, including withdrawal what-if traversal, keystone detection, recruitment predictions verified against real additions, self-learning partner edges and failure insights, the Ask agent's tool chaining and citation filtering over the real protocol, the MCP tool routes, including actual FalkorDB persistence, cross-instance revision conflicts, graph-sourced network edges, access-key protection, custom empty workspace reopen, model HTTP protocol, controlled memory comparison, concurrency and approvals. A local narrated recording shows real live-model evidence, graph traversal and working profile entry; narration uses a disclosed synthetic voice.
 
 ## Project documentation
 

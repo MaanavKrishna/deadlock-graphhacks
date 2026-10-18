@@ -49,3 +49,13 @@ it('reports partners left with no loop at all', async () => {
   expect(impact.loopsAfter).toBe(2);
   expect(impact.stranded).toEqual(['ink-and-code']);
 });
+
+it('the copyable evidence query reproduces each discovered loop in FalkorDB', async () => {
+  const { loopQuery } = await import('../src/shared/loopQuery');
+  const run = await store.discover();
+  for (const c of run.candidates) {
+    const rows = await store.readGraph<Record<string, string>>(loopQuery(c.agencyIds));
+    expect(rows.length).toBeGreaterThan(0);
+    expect(Object.values(rows[0])).toEqual(c.names);
+  }
+});
