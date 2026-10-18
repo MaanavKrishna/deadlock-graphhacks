@@ -63,7 +63,7 @@ There is no automatic reservation expiry. Pending deals stay visible until appro
 
 A promise queue serializes mutations within one server. Each operation loads the current graph, evaluates the transition, then issues a single parameterized Cypher statement to replace the small workspace graph. Approval flags, capacity counters, agreement status and audit events change in that same statement. Reads see the previous or next complete graph state.
 
-This whole-workspace replacement makes the prototype simple to audit. Its write cost grows with history; it is not a production scaling design. A larger product should use targeted transactional updates, revision checks in the database, retention/archival, and a distributed lock or compare-and-swap strategy. Running several app processes on one graph is unsupported.
+This whole-workspace replacement makes the prototype simple to audit. Its write cost grows with history; it is not a production scaling design. Writes carry a graph-side revision check: the statement begins with `MATCH (w:Workspace) WHERE coalesce(w.revision,0) = $expected`, and every later clause is grouped by that revision, so a stale writer changes nothing. The store then confirms its own `writeId` on the Workspace node and otherwise raises a 409 conflict. Several app instances (for example serverless replicas) can therefore share one graph safely. A larger product should still move to targeted transactional updates and retention/archival.
 
 The embedded engine uses append-only persistence with `appendfsync always`; Redis files remain in `.data/graph`. Its Unix socket lives in the OS temporary directory to avoid macOS socket-path limits in deep workspaces. The app shuts down the client and owned database process on SIGINT/SIGTERM. Remote deployments must configure their own persistence and backup.
 
@@ -72,7 +72,7 @@ The embedded engine uses append-only persistence with `appendfsync always`; Redi
 | Method | Route | Result |
 |---|---|---|
 | GET | `/api/health` | Database/agent status; graph read verifies connectivity |
-| GET | `/api/state` | Profiles, agreements, discovery runs and mode |
+| GET | `/api/state` | Profiles, `CAN_SERVE` edges read from FalkorDB (drawn by the network view), agreements, runs, mode |
 | POST | `/api/discover` | Persisted graph search with candidate cycles |
 | POST | `/api/negotiate` | `{runId, agencyIds, mode?, useMemory?}` -> negotiated deal and events |
 | POST | `/api/deals/:id/lessons` | `{agencyId, preferredHours}` -> source-backed participant feedback |
@@ -81,7 +81,7 @@ The embedded engine uses append-only persistence with `appendfsync always`; Redi
 | GET | `/api/deals/:id/export` | JSON terms, events and discovery evidence |
 | POST | `/api/agencies` | Validated new profile; server assigns ID/counters |
 | PUT | `/api/agencies/:id` | Revision-checked profile edit and invalidation |
-| POST | `/api/reset` | Requires `{confirm:true, scenario?:"starter"\|"launch"\|"empty"}`; replaces the dedicated graph |
+| POST | `/api/reset` | Requires `{confirm:true, scenario?:"starter"\|"launch"\|"empty"}` and, when `ACCESS_KEY` is set, header `x-access-key`; replaces the dedicated graph |
 
 Validation errors return 400; missing resources 404; stale/conflicting actions 409; database failures 503. Mutation input is bounded to 32KB and validated with Zod. Browser cross-origin access is rejected. These are sandbox safeguards, not a substitute for authentication or tenant isolation.
 
@@ -101,7 +101,8 @@ The Memory UI compares persisted outcomes only when ordered cycle, actual execut
 - `src/server/graph.ts`: native/remote graph connection and persistence setup.
 - `src/server/store.ts`: discovery, memory, agreement transitions and atomic writes.
 - `src/server/api.ts`: JSON input validation, same-origin checks and error boundaries.
-- `src/server/model.ts`: OpenAI-compatible inspection and decision tools.
+- `src/server/model.ts`: Chat Completions-compatible inspection and decision tools.
+- `src/index.ts`: Vercel entrypoint (remote FalkorDB).
 - `src/server/agents.ts`: feasible proposal menu and bounded coordination.
 - `src/server/showcase.ts`: heterogeneous ten-agency challenge.
 - `src/server/seed.ts`: authored synthetic agency data.

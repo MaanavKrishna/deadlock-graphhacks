@@ -33,7 +33,17 @@ npm run build
 npm start
 ```
 
-The local API binds to `127.0.0.1` by default. This is a single-workspace sandbox with no user authentication. Add authentication and authorization before exposing its mutation routes on a public host.
+The local API binds to `127.0.0.1` by default. It is one shared workspace without per-user accounts. Set `ACCESS_KEY` to require a key for workspace replacement and paid model negotiations; discovery, policy negotiation, approvals and profile edits remain open so visitors can try the exchange.
+
+### Hosted deployment (Vercel + FalkorDB Cloud)
+
+`src/index.ts` exports the same Express API for Vercel's Node runtime, and Vite builds the frontend into `public/` for the CDN. Create a FalkorDB Cloud instance, import this repository in Vercel, and set these environment variables in the Vercel project (never in Git):
+
+- `FALKORDB_URL` — the instance's `rediss://…` connection string (required)
+- `ACCESS_KEY` — key for workspace replacement and model runs (strongly recommended)
+- `MODEL_API_KEY`, `MODEL_NAME`, `MODEL_BASE_URL` — optional live model representatives
+
+The first request seeds the starter network into the empty graph. Several function instances can serve traffic at once: every write is checked against the graph's workspace revision (below).
 
 The embedded data directory is locked against a second application process. After an unclean shutdown, a stale `.data/graph/.deadlock.lock` may remain; remove that file only after confirming no Deadlock process is using the directory. Normal Ctrl+C shutdown releases the lock automatically. Frontend development uses polling so updates also work in cloud-synced folders. Restart the server after backend edits.
 
@@ -94,7 +104,7 @@ The default representatives are **deterministic policy agents**, not language mo
 
 A stable agreement holds capacity and enters `awaiting_approval`. Each participant requires an explicit human sandbox approval. Final approval converts all holds to commitments together. Duplicate approval is idempotent. Cancellation or a profile change releases every affected pending hold. Committed agreements remain historical records; the app does not claim any service was delivered.
 
-Mutations are serialized in **one Node server process**, and each mutation is one atomic Cypher write. The prototype replaces its small graph snapshot per mutation; it is not optimized for an unbounded exchange marketplace. Do not run multiple application processes against the same graph. There is no distributed lock, automatic reservation expiry, real identity verification, escrow or payment system.
+Each mutation is one atomic Cypher write, serialized within a process. Across processes, the write is a **compare-and-swap on the `Workspace` node's revision inside FalkorDB**: the statement only applies if the revision is unchanged since the state was read, otherwise nothing is written and the API returns 409. Two instances racing for the same capacity cannot both hold it (covered by `tests/consistency.test.ts`). Each write replaces the small workspace snapshot, so write cost grows with history; it is sized for a community of tens of agencies, not an unbounded marketplace. There is no automatic reservation expiry, real identity verification, escrow or payment system.
 
 ### Live model representatives
 
@@ -160,7 +170,7 @@ Live testing also produced rejected negotiations. A repeated-inspection issue wa
 
 A separate browser journey entered Atlas Design, Beacon Motion and Cedar Copy through the profile editor, discovered their graph cycle, and completed a live Haiku negotiation with 10h per participant held for approval. Custom workspace and export metadata correctly identify user-entered profiles.
 
-The automated suite contains 35 tests, including actual FalkorDB persistence, custom empty workspace reopen, model HTTP protocol, controlled memory comparison, concurrency and approvals. A local narrated recording shows real live-model evidence, graph traversal and working profile entry; narration uses a disclosed synthetic voice.
+The automated suite contains 36 tests, including actual FalkorDB persistence, cross-instance revision conflicts, graph-sourced network edges, access-key protection, custom empty workspace reopen, model HTTP protocol, controlled memory comparison, concurrency and approvals. A local narrated recording shows real live-model evidence, graph traversal and working profile entry; narration uses a disclosed synthetic voice.
 
 ## Project documentation
 

@@ -7,7 +7,7 @@ Project: **Deadlock**. Team: **ContextSense**.
 - Repository: https://github.com/MaanavKrishna/deadlock-graphhacks
 - Video: https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.2.0/deadlock-live-demo.mp4
 - Release/downloads: https://github.com/MaanavKrishna/deadlock-graphhacks/releases/tag/v0.2.0
-- Deployment path: complete local setup in README (public hosting not claimed).
+- Deployment: Vercel + FalkorDB Cloud configuration in README; complete local setup also documented. Live URL: [ADD AFTER DEPLOY]
 
 ## Suggested description
 

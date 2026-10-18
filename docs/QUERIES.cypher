@@ -57,3 +57,13 @@ RETURN lesson.json AS json;
 MATCH (lesson:Lesson)-[:ABOUT]->(agency:Agency),
       (lesson)-[:LEARNED_FROM]->(source:Deal)
 RETURN agency.name, lesson.json, source.id, source.status;
+
+// 10. Network view: the UI draws exactly these derived relationships.
+MATCH (a:Agency)-[r:CAN_SERVE]->(b:Agency)
+RETURN a.id AS from, b.id AS to, r.service AS service;
+
+// 11. Compare-and-swap guard that opens every workspace write (see write() in store.ts).
+// MATCH (w:Workspace) WHERE coalesce(w.revision, 0) = $expected
+// WITH coalesce(w.revision, 0) AS rev
+// OPTIONAL MATCH (old) DETACH DELETE old WITH rev, count(old) AS removed
+// CREATE (:Workspace {revision:$nextRevision, writeId:$writeId, ...}) ...
