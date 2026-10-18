@@ -4,6 +4,7 @@ import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { DomainError, type Store } from './store';
 import { services } from '../shared/types';
 import { askNetwork } from './ask';
+import { graphTools, runGraphTool } from './tools';
 
 const hours = z.number().finite().min(0.25).max(1000).multipleOf(0.25);
 const agencySchema = z.object({
@@ -64,6 +65,12 @@ export function createApp(store: Store, options: { accessKey?: () => string | un
   app.get('/api/agencies/:id/impact', async (req, res) =>
     res.json(await store.impact(req.params.id)),
   );
+  // Read-only graph tools (also served to MCP clients through src/mcp.ts).
+  app.post('/api/tools/:name', async (req, res) => {
+    if (!graphTools.some((t) => t.name === req.params.name))
+      throw new DomainError('Unknown graph tool.', 404);
+    res.json(await runGraphTool(store, req.params.name, req.body ?? {}));
+  });
   app.post('/api/ask', async (req, res) => {
     const { question } = z.object({ question: z.string().trim().min(3).max(500) }).parse(req.body);
     requireKey(req);

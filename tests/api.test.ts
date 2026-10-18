@@ -114,3 +114,15 @@ it('requires the access key for workspace replacement and paid model runs when o
   ).toBe(200);
   expect((await request(locked).get('/api/state')).body.accessRequired).toBe(true);
 });
+it('serves read-only graph tools for MCP clients and rejects unknown tools', async () => {
+  const providers = await request(app).post('/api/tools/find_providers').send({ service: 'copy' });
+  expect(providers.status).toBe(200);
+  expect(providers.body.sources.map((s: { id: string }) => s.id).sort()).toEqual([
+    'ink-and-code',
+    'wordcraft',
+  ]);
+  expect((await request(app).post('/api/tools/delete_graph').send({})).status).toBe(404);
+  expect((await request(app).post('/api/tools/find_providers').send({ service: 'x' })).status).toBe(
+    400,
+  );
+});
