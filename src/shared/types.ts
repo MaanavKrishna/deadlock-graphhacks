@@ -169,6 +169,20 @@ export interface Insight {
   revision: number;
   createdAt: string;
 }
+// Output of FalkorDB's built-in graph algorithms over Agency/CAN_SERVE.
+export interface NetworkStructure {
+  algorithms: string[];
+  components: number;
+  broker?: string;
+  isolatedGroups: string[][];
+  agencies: {
+    id: string;
+    name: string;
+    pageRank: number;
+    betweenness: number;
+    componentId: number;
+  }[];
+}
 export interface GrowthOption {
   offer: Service;
   need: Service;

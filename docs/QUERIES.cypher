@@ -87,3 +87,10 @@ RETURN i.json AS json;
 // 15. Decision trace used by the explain_deal tool.
 MATCH (:Deal {id:$dealId})-[:HAS_EVENT]->(e:Event) OPTIONAL MATCH (e)-[:BY]->(a:Agency)
 RETURN e.json AS json, a.name AS by;
+
+// 16. FalkorDB built-in algorithms used by the Network structure card and network_structure tool.
+CALL algo.pageRank('Agency', 'CAN_SERVE') YIELD node, score RETURN node.id AS id, score;
+CALL algo.betweenness({nodeLabels: ['Agency'], relationshipTypes: ['CAN_SERVE'], samplingSize: 1000, samplingSeed: 7})
+YIELD node, score RETURN node.id AS id, score;
+CALL algo.WCC({nodeLabels: ['Agency'], relationshipTypes: ['CAN_SERVE']})
+YIELD node, componentId RETURN node.id AS id, componentId;

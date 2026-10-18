@@ -13,6 +13,7 @@ Tracks: **Agents That Act on Connected Data**, **Agent Memory and Coordination**
 | Find exchanges no pair can make | Variable-length cycle traversal over derived `CAN_SERVE` edges | 01 |
 | **Why this loop?** | Each hop shown as `(A)-[:OFFERS]→(service)←[:NEEDS]-(B)` with deadlines, plus a copyable Cypher query that reproduces the loop in FalkorDB (tested against every discovered loop) | 01 |
 | **What breaks if an agency leaves** | The same traversal re-run with that agency excluded: broken loops, affected agreements, held hours, who is still routable, who is stranded | 01 |
+| **Network structure** | FalkorDB's built-in `algo.betweenness` (exact, seeded), `algo.pageRank` and `algo.WCC` find the broker agency, incoming flow and sub-networks that can never trade; shown on the exchange desk and as the `network_structure` agent/MCP tool | 01 |
 | **Keystone agencies** | Agencies every current loop runs through, flagged on the network | 01 |
 | **Who to recruit next** | 1–2 hop path query for each missing offer/need profile predicts how many new loops it would open (prediction verified by test) | 01 |
 | Agents act on the graph | Representatives inspect graph context and accept, counter or reject validated proposals; capacity is held only after all agree | 01 |
@@ -173,7 +174,7 @@ Choose **Launch challenge · 10 agencies** and confirm the replacement. It inclu
 
 ### Ask the network and MCP
 
-Open **Ask the network** and ask, for example, "What breaks if Motionhaus leaves?" or "Which agency does every loop depend on?". The agent may only call fixed graph tools (`list_agencies`, `find_providers`, `who_can_serve`, `find_loops`, `withdrawal_impact`, `agency_history`, `explain_deal`, `recruit_suggestions`); it never writes Cypher. Its answer can only cite node ids those tools returned, and the tool trace is shown under every answer. Requires a configured model; protected by `ACCESS_KEY` when set.
+Open **Ask the network** and ask, for example, "What breaks if Motionhaus leaves?" or "Which agency does every loop depend on?". The agent may only call fixed graph tools (`list_agencies`, `find_providers`, `who_can_serve`, `find_loops`, `network_structure`, `withdrawal_impact`, `agency_history`, `explain_deal`, `recruit_suggestions`); it never writes Cypher. Its answer can only cite node ids those tools returned, and the tool trace is shown under every answer. Requires a configured model; protected by `ACCESS_KEY` when set.
 
 To use the graph from Claude Desktop, Claude Code or another MCP client while Deadlock runs:
 
@@ -225,7 +226,7 @@ Live testing also produced rejected negotiations. A repeated-inspection issue wa
 
 A separate browser journey entered Atlas Design, Beacon Motion and Cedar Copy through the profile editor, discovered their graph cycle, and completed a live Haiku negotiation with 10h per participant held for approval. Custom workspace and export metadata correctly identify user-entered profiles.
 
-The automated suite contains 46 tests, including the copyable evidence query reproducing every discovered loop, including withdrawal what-if traversal, keystone detection, recruitment predictions verified against real additions, self-learning partner edges and failure insights, the Ask agent's tool chaining and citation filtering over the real protocol, the MCP tool routes, including actual FalkorDB persistence, cross-instance revision conflicts, graph-sourced network edges, access-key protection, custom empty workspace reopen, model HTTP protocol, controlled memory comparison, concurrency and approvals. A local narrated recording shows real live-model evidence, graph traversal and working profile entry; narration uses a disclosed synthetic voice.
+The automated suite contains 48 tests, including FalkorDB algorithm results (broker, PageRank, separate components), including the copyable evidence query reproducing every discovered loop, including withdrawal what-if traversal, keystone detection, recruitment predictions verified against real additions, self-learning partner edges and failure insights, the Ask agent's tool chaining and citation filtering over the real protocol, the MCP tool routes, including actual FalkorDB persistence, cross-instance revision conflicts, graph-sourced network edges, access-key protection, custom empty workspace reopen, model HTTP protocol, controlled memory comparison, concurrency and approvals. A local narrated recording shows real live-model evidence, graph traversal and working profile entry; narration uses a disclosed synthetic voice.
 
 ## Project documentation
 

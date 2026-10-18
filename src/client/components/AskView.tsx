@@ -146,6 +146,7 @@ export default function AskView({
         <ul>
           {[
             ['find_loops', 'Closed 3–4 agency cycles'],
+            ['network_structure', 'PageRank, betweenness, components'],
             ['withdrawal_impact', 'What breaks if one leaves'],
             ['who_can_serve', 'Multi-hop neighbourhood'],
             ['find_providers', 'Who offers a service'],

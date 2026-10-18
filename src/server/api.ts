@@ -62,6 +62,7 @@ export function createApp(store: Store, options: { accessKey?: () => string | un
   app.get('/api/state', async (_req, res) =>
     res.json({ ...(await store.snapshot()), accessRequired: Boolean(accessKey()) }),
   );
+  app.get('/api/structure', async (_req, res) => res.json(await store.structure()));
   app.get('/api/growth', async (_req, res) => res.json(await store.growth()));
   app.get('/api/agencies/:id/impact', async (req, res) =>
     res.json(await store.impact(req.params.id)),

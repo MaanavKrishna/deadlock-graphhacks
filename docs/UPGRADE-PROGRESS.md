@@ -40,3 +40,4 @@ Plan: docs/superpowers/plans/2026-10-18-agent-upgrade.md.
 - Every workspace view has its own URL with Back/Forward support and per-page titles; agreements are linkable with `?deal=`. "Why this loop?" evidence panel with a copyable Cypher query, tested to reproduce every discovered loop. 46 tests pass.
 - Removed the `codex/deadlock` branch from GitHub; `main` is the default branch.
 - All workspace views moved to the v2 design with motion: Agencies (filterable card grid, capacity meters, loop counts), Activity (status counters, timeline), Memory (memory counters, source cards), Ask (dark panel, tool list), Settings (workspace choice cards). Checked at 1440 and 390 with no console errors or horizontal scroll.
+- FalkorDB native algorithms (PageRank, seeded exact betweenness, WCC) power a Network structure card and the network_structure agent/MCP tool; tests cover broker detection and separate sub-networks. 48 tests pass.

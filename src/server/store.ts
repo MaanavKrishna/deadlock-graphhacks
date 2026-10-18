@@ -11,6 +11,7 @@ import type {
   LoopStats,
   Insight,
   GrowthOption,
+  NetworkStructure,
 } from '../shared/types';
 import { services } from '../shared/types';
 import { canonicalCycle, event, negotiate as negotiateTerms } from './negotiation';
@@ -268,6 +269,45 @@ export class Store {
             .filter((id) => byAgency[id] === loops.length)
             .sort()
         : [],
+    };
+  }
+  // FalkorDB's native algorithm procedures over the derived CAN_SERVE graph: PageRank (who
+  // receives the most flow), betweenness (who brokers paths between others) and weakly
+  // connected components (sub-networks that can never trade with each other).
+  async structure(): Promise<NetworkStructure> {
+    const config = "{nodeLabels: ['Agency'], relationshipTypes: ['CAN_SERVE']}";
+    const [rank, between, wcc, names] = await Promise.all([
+      this.readGraph<{ id: string; score: number }>(
+        "CALL algo.pageRank('Agency', 'CAN_SERVE') YIELD node, score RETURN node.id AS id, score",
+      ),
+      this.readGraph<{ id: string; score: number }>(
+        // Sample every node with a fixed seed so scores are exact and repeatable.
+        "CALL algo.betweenness({nodeLabels: ['Agency'], relationshipTypes: ['CAN_SERVE'], samplingSize: 1000, samplingSeed: 7}) YIELD node, score RETURN node.id AS id, score",
+      ),
+      this.readGraph<{ id: string; componentId: number }>(
+        `CALL algo.WCC(${config}) YIELD node, componentId RETURN node.id AS id, componentId`,
+      ),
+      this.readGraph<{ id: string; name: string }>(
+        'MATCH (a:Agency) RETURN a.id AS id, a.name AS name',
+      ),
+    ]);
+    const agencies = names.map(({ id, name }) => ({
+      id,
+      name,
+      pageRank: Math.round((rank.find((r) => r.id === id)?.score ?? 0) * 1000) / 1000,
+      betweenness: Math.round((between.find((r) => r.id === id)?.score ?? 0) * 10) / 10,
+      componentId: wcc.find((r) => r.id === id)?.componentId ?? -1,
+    }));
+    const groups = new Map<number, string[]>();
+    for (const a of agencies)
+      groups.set(a.componentId, [...(groups.get(a.componentId) ?? []), a.id]);
+    const broker = [...agencies].sort((a, b) => b.betweenness - a.betweenness)[0];
+    return {
+      algorithms: ['algo.pageRank', 'algo.betweenness', 'algo.WCC'],
+      components: groups.size,
+      broker: broker && broker.betweenness > 0 ? broker.id : undefined,
+      isolatedGroups: groups.size > 1 ? [...groups.values()] : [],
+      agencies: agencies.sort((a, b) => b.betweenness - a.betweenness || b.pageRank - a.pageRank),
     };
   }
   // Recruitment what-if: a hypothetical agency offering `offer` and needing `need` closes a

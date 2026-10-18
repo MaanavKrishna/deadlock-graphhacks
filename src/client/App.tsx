@@ -36,6 +36,7 @@ import MemoryView from './components/MemoryView';
 import AskView from './components/AskView';
 import GrowthCard from './components/GrowthCard';
 import StatsRow from './components/StatsRow';
+import StructureCard from './components/StructureCard';
 
 type View = 'exchange' | 'ask' | 'agencies' | 'history' | 'memory' | 'guide';
 // Every workspace view has its own address, so views can be bookmarked, shared and
@@ -646,9 +647,14 @@ export default function App() {
                         </div>
                       )}
                     </section>
-                    <GrowthCard
-                      version={state.agencies.map((a) => `${a.id}:${a.revision}`).join(',')}
-                    />
+                    <div className="insight-cards">
+                      <StructureCard
+                        version={state.agencies.map((a) => `${a.id}:${a.revision}`).join(',')}
+                      />
+                      <GrowthCard
+                        version={state.agencies.map((a) => `${a.id}:${a.revision}`).join(',')}
+                      />
+                    </div>
                     <div className="bottom-note">
                       <span className="brand-mark mini">
                         <i />
