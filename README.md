@@ -25,7 +25,7 @@ Tracks: **Agents That Act on Connected Data**, **Agent Memory and Coordination**
 | Shared state across instances | Every write is a compare-and-swap on the graph's workspace revision | 02 |
 | Decisions traced to source | Every decision is an `Event` node linked to its agreement and agency; `explain_deal` walks it | 03 |
 
-[Public source](https://github.com/MaanavKrishna/deadlock-graphhacks) · [Demo video (v0.3)](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.3.0/deadlock-v03-demo.mp4) · [v0.2 walkthrough](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.2.0/deadlock-live-demo.mp4) · [Release](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/tag/v0.3.0)
+[Live app](https://deadlock-graphhacks.vercel.app) · [Public source](https://github.com/MaanavKrishna/deadlock-graphhacks) · [Demo video (v0.3)](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.3.0/deadlock-v03-demo.mp4) · [v0.2 walkthrough](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.2.0/deadlock-live-demo.mp4) · [Release](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/tag/v0.3.0)
 
 ![Exchange desk: graph loops, keystone agency and recruitment what-if](docs/images/workspace.png)
 

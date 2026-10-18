@@ -116,7 +116,9 @@ export default function App() {
   async function refresh(initial = false) {
     const s = await api<Snapshot>('/state');
     setState(s);
-    if (initial && !dealFromUrl() && s.deals.length) setDealId(s.deals[0].id);
+    // Reopen only an agreement still waiting on people; finished ones live in Activity.
+    const pending = s.deals.find((d) => d.status === 'awaiting_approval');
+    if (initial && !dealFromUrl() && pending) setDealId(pending.id);
     if (initial) setAgentMode(s.modelConfigured ? 'model' : 'policy');
     return s;
   }
