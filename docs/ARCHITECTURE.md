@@ -9,7 +9,10 @@ flowchart TD
   Store --> Policies[Independent participant policies]
   Store -->|Cypher traversal and atomic writes| DB[(FalkorDB)]
   DB -->|candidate cycles and prior agreements| Store
-  Store -->|optional synthetic outcome only| Advisor[Model explanation advisor]
+  Store --> Runner[Bounded representative tool loop]
+  Runner --> Model[Optional model provider]
+  DB -->|source-backed lessons| Runner
+  Runner -->|validated terms| Store
 ```
 
 `src/shared/types.ts` is the API/domain contract. The browser never connects to the database or receives model credentials. Vite is middleware in the same Node process during development. Production serves the Vite build through Express.
@@ -18,11 +21,13 @@ flowchart TD
 
 FalkorDB is the only durable store. Agency profiles and service relationships generate `CAN_SERVE` edges. The database follows directed closed paths of length three or four. The application rejects repeated members, canonicalizes rotations, and ranks feasible paths by aggregate synthetic service credits, breaking ties by stable cycle ID. This ranking does not claim optimal economic utility, service quality, or global optimality.
 
-The traversal is bounded to 2,000 raw paths, so discovery is not exhaustive in a dense large network. Agency creation is capped at 30 profiles. The product and demo are designed for a small community of six agencies.
+The traversal is bounded to 2,000 raw paths, so discovery is not exhaustive in a dense large network. Agency creation is capped at 30 profiles. The product and demo are designed for a small community of six or ten seeded agencies.
 
 `Deal-[:INVOLVES]->Agency` retrieves the latest related agreement for each representative. A subsequent negotiation records which previous agreement it consulted, then rechecks current constraints. The shared graph also supplies current reservations and commitments. Historical memory never overrides a current capacity or deadline limit.
 
-The `Agency`, `Run`, `Deal`, and `Event` nodes keep JSON snapshots for complete historical reconstruction. Typed graph relationships power matching and evidence paths. IDs are application-level UUIDs/slugs; internal graph node IDs are not stable.
+The `Workspace`, `Agency`, `Run`, `Deal`, `Lesson`, and `Event` nodes keep JSON snapshots for complete historical reconstruction. Typed graph relationships power matching and evidence paths. IDs are application-level UUIDs/slugs; internal graph node IDs are not stable.
+
+`Workspace` metadata records sample/custom origin and selected scenario. Initialization checks for Agency or Workspace nodes, so an intentionally empty custom workspace is preserved across restarts. New empty workspaces use the same create/edit, traversal, negotiation and approval routes as samples. This remains a single locally operated workspace; custom entry does not imply real identity verification.
 
 ## Negotiation policy
 
@@ -69,19 +74,26 @@ The embedded engine uses append-only persistence with `appendfsync always`; Redi
 | GET | `/api/health` | Database/agent status; graph read verifies connectivity |
 | GET | `/api/state` | Profiles, agreements, discovery runs and mode |
 | POST | `/api/discover` | Persisted graph search with candidate cycles |
-| POST | `/api/negotiate` | `{runId, agencyIds}` -> negotiated deal and events |
+| POST | `/api/negotiate` | `{runId, agencyIds, mode?, useMemory?}` -> negotiated deal and events |
+| POST | `/api/deals/:id/lessons` | `{agencyId, preferredHours}` -> source-backed participant feedback |
 | POST | `/api/deals/:id/approve` | `{agencyId}` -> one sandbox member approval |
 | POST | `/api/deals/:id/cancel` | Cancel pending proposal and release holds |
 | GET | `/api/deals/:id/export` | JSON terms, events and discovery evidence |
 | POST | `/api/agencies` | Validated new profile; server assigns ID/counters |
 | PUT | `/api/agencies/:id` | Revision-checked profile edit and invalidation |
-| POST | `/api/reset` | Requires `{confirm:true}`; replaces the dedicated graph |
+| POST | `/api/reset` | Requires `{confirm:true, scenario?:"starter"\|"launch"\|"empty"}`; replaces the dedicated graph |
 
 Validation errors return 400; missing resources 404; stale/conflicting actions 409; database failures 503. Mutation input is bounded to 32KB and validated with Zod. Browser cross-origin access is rejected. These are sandbox safeguards, not a substitute for authentication or tenant isolation.
 
-## Optional model advisor
+## Model decisions and learned preferences
 
-The server sends a synthetic outcome to a configurable Chat Completions endpoint. A strict local schema accepts only a nonempty summary of at most 600 characters. The request times out after eight seconds, invalid provider responses produce a visible fallback event, and no model output changes terms, participant membership, holds, approvals or commitments. There is no claim of LLM-powered negotiation in policy mode.
+`buildProposals` generates requested, lean and optionally remembered scope vectors. The pure policy engine finds feasible terms; `validateLegs` independently rechecks the original participants' complete hard constraints. The model sees only this feasible menu. It must inspect context before deciding. A counter changes the actual eventual reservation vector and restarts representative acceptance; a human approval is a separate lifecycle action.
+
+Model transport uses Chat Completions function calls, strict local Zod argument validation, one tool call per response, three tool requests per representative turn, twelve seconds per provider request, six negotiation rounds and sixty seconds total. Errors and repeated/unknown proposals reject without new holds. The requested model, provider-reported actual models, identity-availability flag, mode, memory flag, lesson IDs, selected proposal and actual tools persist with the deal. Key-free policy simulation remains explicit. Preflight-infeasible paths reject before calling the provider.
+
+A lesson is human-entered participant feedback about preferred received scope. `Lesson-[:ABOUT]->Agency` and `Lesson-[:LEARNED_FROM]->Deal` preserve its provenance. Source negotiations must involve the agency. Recording a lesson supersedes its previous active lesson without changing hard profiles. Active lessons are retrieved through the graph when memory is enabled. The participant's representative receives only its own lesson records; remembered proposal vectors can reflect the whole cycle's preferences. Infeasible feedback is retained but cannot override hard minimums.
+
+The Memory UI compares persisted outcomes only when ordered cycle, actual execution mode known model identity/provider for model runs, and full participant snapshots (including capacity counters and revisions) are identical. It never invents an improvement estimate. Integration tests close and reopen real FalkorDB between learning and negotiation, then disable memory to restore the baseline terms.
 
 ## Source map
 
@@ -89,7 +101,9 @@ The server sends a synthetic outcome to a configurable Chat Completions endpoint
 - `src/server/graph.ts`: native/remote graph connection and persistence setup.
 - `src/server/store.ts`: discovery, memory, agreement transitions and atomic writes.
 - `src/server/api.ts`: JSON input validation, same-origin checks and error boundaries.
-- `src/server/advisor.ts`: optional bounded model explanation.
+- `src/server/model.ts`: OpenAI-compatible inspection and decision tools.
+- `src/server/agents.ts`: feasible proposal menu and bounded coordination.
+- `src/server/showcase.ts`: heterogeneous ten-agency challenge.
 - `src/server/seed.ts`: authored synthetic agency data.
 - `src/client/App.tsx`: workspace orchestration and API state.
 - `src/client/components/`: network, negotiation, directory and history UI.

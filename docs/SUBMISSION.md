@@ -9,7 +9,7 @@ Deadlock is a graph-native capacity exchange for small creative-agency communiti
 ## Tracks
 
 - **Agents That Act on Connected Data:** Cypher cycle traversal selects participants; constrained agents counter terms and create capacity holds and commitments.
-- **Agent Memory and Coordination:** Representative decisions, shared reservations, approval state and prior agreements persist across sessions; subsequent representatives retrieve relevant previous agreements as context.
+- **Agent Memory and Coordination:** Representative decisions, shared reservations, approval state and prior agreements and source-backed scope lessons persist across sessions. A live memory ablation changed received scope from 10h to 8h; disabling memory restores baseline terms in the controlled policy integration test.
 
 ## Included
 
@@ -19,7 +19,7 @@ Deadlock is a graph-native capacity exchange for small creative-agency communiti
 - [x] Synthetic data provenance.
 - [x] AI-assistance disclosure.
 - [x] Demo storyboard and recording script.
-- [x] Local captioned recording of the working flow (`artifacts/deadlock-demo.webm`, no audio).
+- [x] Narrated three-minute recording of live model behavior (`artifacts/deadlock-live-demo.mp4`, disclosed synthetic voice).
 - [x] Automated tests plus desktop/mobile browser verification.
 - [x] Docker configuration supplied (native setup is the tested path).
 
@@ -34,7 +34,7 @@ Deadlock is a graph-native capacity exchange for small creative-agency communiti
 - [ ] Name both entered tracks in the form.
 - [ ] Disclose AI coding assistance accurately.
 
-No public repository, hosted site, uploaded video or hackathon submission is claimed by the local build. Complete local instructions are the deployment path. The team's membership locks after submission according to the event rules provided by the participant.
+Public repository and video links are recorded below after publication. No hosted application or hackathon submission is claimed. Complete local instructions are the deployment path. The team's membership locks after submission according to the event rules provided by the participant.
 
 ## Technical understanding prompts
 

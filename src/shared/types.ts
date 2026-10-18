@@ -47,6 +47,9 @@ export interface NegotiationEvent {
     | 'advisor';
   reason: string;
   at: string;
+  tool?: string;
+  proposalId?: string;
+  evidenceIds?: string[];
 }
 export interface Deal {
   id: string;
@@ -63,6 +66,15 @@ export interface Deal {
   rounds: number;
   reason?: string;
   totalCredits: number;
+  requestedMode?: 'policy' | 'model';
+  executedMode?: 'policy' | 'model';
+  model?: string;
+  requestedModel?: string;
+  modelProvider?: string;
+  modelIdentityKnown?: boolean;
+  useMemory?: boolean;
+  lessonIds?: string[];
+  proposalId?: string;
 }
 export interface Candidate {
   id: string;
@@ -85,14 +97,56 @@ export interface Snapshot {
   runs: Run[];
   database: string;
   agentMode: string;
-  synthetic: true;
+  synthetic: boolean;
+  modelConfigured?: boolean;
+  modelName?: string;
+  lessons: Lesson[];
+  scenario?: 'starter' | 'launch' | 'custom';
 }
 export interface NegotiationResult {
+  reportedModels?: string[];
+  modelIdentityKnown?: boolean;
   accepted: boolean;
   legs: Leg[];
   events: NegotiationEvent[];
   rounds: number;
   reason?: string;
+  proposalId?: string;
+}
+export interface Proposal {
+  id: string;
+  label: string;
+  legs: Leg[];
+}
+export interface Lesson {
+  id: string;
+  agencyId: string;
+  dealId: string;
+  preferredHours: number;
+  statement: string;
+  createdAt: string;
+  active?: boolean;
+}
+export interface AgentContext {
+  agency: Agency;
+  participants: Agency[];
+  current: Proposal;
+  proposals: Proposal[];
+  lessons: Lesson[];
+  useMemory: boolean;
+  round: number;
+}
+export interface AgentDecision {
+  reportedModels?: string[];
+  modelIdentityKnown?: boolean;
+  tool: 'accept_offer' | 'counter_offer' | 'reject_offer';
+  proposalId?: string;
+  reason: string;
+  trace?: { tool: string; reason: string; evidenceIds?: string[] }[];
+}
+export interface NegotiationOptions {
+  mode?: 'policy' | 'model';
+  useMemory?: boolean;
 }
 export const serviceNames: Record<Service, string> = {
   design: 'Brand design',

@@ -14,7 +14,7 @@ RETURN [n IN nodes(p) | n.id] AS ids LIMIT 2000;
 // canonicalizes rotations (not reverse direction), and checks each agency policy.
 
 // 3. Read persistent profiles, runs and agreement snapshots in one consistent read.
-MATCH (n) WHERE n:Agency OR n:Deal OR n:Run
+MATCH (n) WHERE n:Agency OR n:Deal OR n:Run OR n:Lesson
 RETURN labels(n)[0] AS kind, n.json AS json;
 
 // 4. Retrieve shared context from previous negotiations for a participant.
@@ -46,3 +46,14 @@ RETURN d.json;
 // RETURN count(*) AS edges
 // The complete generated statement is the write() function in store.ts. One graph
 // transaction replaces a small workspace snapshot; this is not a scale claim.
+
+// 8. Retrieve active participant feedback through the graph.
+MATCH (lesson:Lesson)-[:ABOUT]->(agency:Agency)
+WHERE lesson.active = true AND agency.id = $member0
+RETURN lesson.json AS json;
+// Runtime extends predicate for up to four participant IDs.
+
+// 9. Trace a remembered preference to its negotiation source.
+MATCH (lesson:Lesson)-[:ABOUT]->(agency:Agency),
+      (lesson)-[:LEARNED_FROM]->(source:Deal)
+RETURN agency.name, lesson.json, source.id, source.status;

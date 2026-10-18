@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import type { Agency, Candidate, Deal, Run, Snapshot } from '../shared/types';
+import type { Agency, Candidate, Deal, Run, Snapshot, NegotiationOptions } from '../shared/types';
 import { services } from '../shared/types';
 import { canonicalCycle, event, negotiate as negotiateTerms } from './negotiation';
 import { openGraph, type GraphConnection } from './graph';
 import { seedAgencies } from './seed';
-import { advise } from './advisor';
+import { showcaseAgencies } from './showcase';
+import { buildProposals, runAgents, decideWithPolicy } from './agents';
+import { modelConfig, decideWithModel, type ModelConfig } from './model';
+import type { Lesson } from '../shared/types';
 
 export class DomainError extends Error {
   constructor(
@@ -17,21 +20,31 @@ export class DomainError extends Error {
 export const CYCLE_QUERY = `MATCH p=(a:Agency)-[:CAN_SERVE*3..4]->(a)
 WHERE all(n IN nodes(p) WHERE n.active = true)
 RETURN [n IN nodes(p) | n.id] AS ids LIMIT 2000`;
-type State = Pick<Snapshot, 'agencies' | 'deals' | 'runs'>;
+type State = Pick<Snapshot, 'agencies' | 'deals' | 'runs' | 'lessons'> & {
+  workspace?: { scenario: 'starter' | 'launch' | 'custom'; synthetic: boolean };
+};
 
 export class Store {
   private tail: Promise<unknown> = Promise.resolve();
-  private constructor(private connection: GraphConnection) {}
+  private constructor(
+    private connection: GraphConnection,
+    private resolveModel: () => ModelConfig | undefined = modelConfig,
+  ) {}
   static async open(
-    options: { path?: string; url?: string; graphName?: string } = {},
+    options: {
+      path?: string;
+      url?: string;
+      graphName?: string;
+      modelConfig?: () => ModelConfig | undefined;
+    } = {},
   ): Promise<Store> {
-    const store = new Store(await openGraph(options));
+    const store = new Store(await openGraph(options), options.modelConfig ?? modelConfig);
     try {
       const result = await store.connection.graph.query<{ count: number }>(
-        'MATCH (a:Agency) RETURN count(a) AS count',
+        'MATCH (n) WHERE n:Agency OR n:Workspace RETURN count(n) AS count',
       );
       if (!result.data?.[0]?.count)
-        await store.write({ agencies: seedAgencies(), deals: [], runs: [] });
+        await store.write({ agencies: seedAgencies(), deals: [], runs: [], lessons: [] });
       return store;
     } catch (error) {
       await store.close();
@@ -45,13 +58,15 @@ export class Store {
   }
   private async read(): Promise<State> {
     const result = await this.connection.graph.roQuery<{ kind: string; json: string }>(
-      'MATCH (n) WHERE n:Agency OR n:Deal OR n:Run RETURN labels(n)[0] AS kind, n.json AS json',
+      'MATCH (n) WHERE n:Agency OR n:Deal OR n:Run OR n:Lesson OR n:Workspace RETURN labels(n)[0] AS kind, n.json AS json',
     );
-    const state: State = { agencies: [], deals: [], runs: [] };
+    const state: State = { agencies: [], deals: [], runs: [], lessons: [] };
     for (const row of result.data ?? []) {
+      if (row.kind === 'Workspace') state.workspace = JSON.parse(row.json);
       if (row.kind === 'Agency') state.agencies.push(JSON.parse(row.json));
       if (row.kind === 'Deal') state.deals.push(JSON.parse(row.json));
       if (row.kind === 'Run') state.runs.push(JSON.parse(row.json));
+      if (row.kind === 'Lesson') state.lessons.push(JSON.parse(row.json));
     }
     state.agencies.sort((a, b) => a.name.localeCompare(b.name));
     state.deals.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -63,7 +78,14 @@ export class Store {
     const params: Record<string, string | number | boolean> = {};
     const lines = ['OPTIONAL MATCH (old) DETACH DELETE old WITH count(old) AS removed'];
     const agencyVars = new Map<string, string>(),
-      runVars = new Map<string, string>();
+      runVars = new Map<string, string>(),
+      dealVars = new Map<string, string>();
+    const workspace = state.workspace ?? {
+      scenario: state.agencies.some((a) => a.id === 'premiere') ? 'launch' : 'starter',
+      synthetic: true,
+    };
+    params.workspace = JSON.stringify(workspace);
+    lines.push('CREATE (:Workspace {id:"workspace",json:$workspace})');
     services.forEach((s, i) => {
       params[`s${i}`] = s;
       lines.push(`CREATE (s${i}:Service {id:$s${i}})`);
@@ -96,6 +118,7 @@ export class Store {
     });
     state.deals.forEach((d, i) => {
       const v = `d${i}`;
+      dealVars.set(d.id, v);
       params[`${v}id`] = d.id;
       params[`${v}json`] = JSON.stringify(d);
       params[`${v}status`] = d.status;
@@ -115,25 +138,54 @@ export class Store {
           lines.push(`CREATE (${ev})-[:BY]->(${agencyVars.get(e.actor)})`);
       });
     });
+    state.lessons.forEach((lesson, i) => {
+      const v = `lesson${i}`;
+      params[`${v}id`] = lesson.id;
+      params[`${v}json`] = JSON.stringify(lesson);
+      params[`${v}active`] = lesson.active !== false;
+      lines.push(`CREATE (${v}:Lesson {id:$${v}id,json:$${v}json,active:$${v}active})`);
+      if (agencyVars.has(lesson.agencyId))
+        lines.push(`CREATE (${v})-[:ABOUT]->(${agencyVars.get(lesson.agencyId)})`);
+      if (dealVars.has(lesson.dealId))
+        lines.push(`CREATE (${v})-[:LEARNED_FROM]->(${dealVars.get(lesson.dealId)})`);
+    });
     lines.push(
       'WITH count(*) AS written MATCH (provider:Agency)-[:OFFERS]->(service:Service)<-[:NEEDS]-(recipient:Agency) WHERE provider.id <> recipient.id CREATE (provider)-[:CAN_SERVE {service:service.id}]->(recipient) RETURN count(*) AS edges',
     );
     await this.connection.graph.query(lines.join('\n'), { params });
   }
   async snapshot(): Promise<Snapshot> {
+    const config = this.resolveModel();
+    const data = await this.read();
     return {
-      ...(await this.read()),
+      ...data,
+      scenario:
+        data.workspace?.scenario ??
+        (data.agencies.some((a) => a.id === 'premiere')
+          ? 'launch'
+          : data.agencies.length === 6
+            ? 'starter'
+            : 'custom'),
       database: this.connection.mode,
-      agentMode:
-        process.env.MODEL_API_KEY && process.env.MODEL_NAME
-          ? 'Policy agents + model advisor'
-          : 'Policy agents',
-      synthetic: true,
+      agentMode: config ? 'Model agents available' : 'Policy simulation',
+      modelConfigured: Boolean(config),
+      modelName: config?.name,
+      synthetic: data.workspace?.synthetic ?? true,
     };
   }
-  async reset(): Promise<Snapshot> {
+  async reset(scenario: 'starter' | 'launch' | 'empty' = 'starter'): Promise<Snapshot> {
     return this.exclusive(async () => {
-      await this.write({ agencies: seedAgencies(), deals: [], runs: [] });
+      await this.write({
+        agencies:
+          scenario === 'empty' ? [] : scenario === 'launch' ? showcaseAgencies() : seedAgencies(),
+        workspace: {
+          scenario: scenario === 'empty' ? 'custom' : scenario,
+          synthetic: scenario !== 'empty',
+        },
+        deals: [],
+        runs: [],
+        lessons: [],
+      });
       return this.snapshot();
     });
   }
@@ -178,7 +230,7 @@ export class Store {
       return run;
     });
   }
-  async negotiate(runId: string, ids: string[]): Promise<Deal> {
+  async negotiate(runId: string, ids: string[], options: NegotiationOptions = {}): Promise<Deal> {
     return this.exclusive(async () => {
       const state = await this.read(),
         run = state.runs.find((r) => r.id === runId);
@@ -189,29 +241,58 @@ export class Store {
       if (participants.some((a) => !a))
         throw new DomainError('An agency no longer exists. Discover exchanges again.');
       const agents = participants as Agency[],
-        result = negotiateTerms(agents),
+        policyResult = negotiateTerms(agents),
         now = new Date().toISOString();
+      const mode = options.mode ?? 'policy',
+        config = mode === 'model' ? this.resolveModel() : undefined;
+      if (mode === 'model' && !config)
+        throw new DomainError(
+          'Configure MODEL_API_KEY, MODEL_NAME and MODEL_BASE_URL in the ignored .env file for live model agents.',
+        );
+      const useMemory = options.useMemory ?? true;
+      let lessons: Lesson[] = [];
+      if (useMemory) {
+        const lessonParams = Object.fromEntries(ids.map((id, i) => [`member${i}`, id]));
+        const retrieved = await this.connection.graph.roQuery<{ json: string }>(
+          `MATCH (lesson:Lesson)-[:ABOUT]->(member:Agency) WHERE lesson.active = true AND (${ids.map((_, i) => `member.id = $member${i}`).join(' OR ')}) RETURN lesson.json AS json`,
+          { params: lessonParams },
+        );
+        lessons = (retrieved.data ?? []).map((row) => JSON.parse(row.json) as Lesson);
+      }
+      const result =
+        policyResult.accepted && (mode === 'model' || lessons.length > 0)
+          ? await runAgents(
+              agents,
+              buildProposals(agents, lessons),
+              mode === 'model'
+                ? (context, signal) => decideWithModel(context, config!, signal)
+                : decideWithPolicy,
+              { lessons, useMemory },
+            )
+          : policyResult;
       const memoryParams = Object.fromEntries(ids.map((id, i) => [`member${i}`, id]));
       const memory = await this.connection.graph.roQuery<{ agencyId: string; json: string }>(
         `MATCH (prior:Deal)-[:INVOLVES]->(member:Agency) WHERE ${ids.map((_, i) => `member.id = $member${i}`).join(' OR ')} RETURN member.id AS agencyId, prior.json AS json`,
         { params: memoryParams },
       );
-      const context = ids.flatMap((id) => {
-        const prior = (memory.data ?? [])
-          .filter((row) => row.agencyId === id)
-          .map((row) => JSON.parse(row.json) as Deal)
-          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
-        return prior
-          ? [
-              event(
-                id,
-                0,
-                'inspect',
-                `Retrieved prior agreement ${prior.id.slice(0, 8)} from shared graph memory (${prior.status}). ${prior.reason ?? 'Previous terms retained as context.'} Rechecked current capacity and constraints before this proposal.`,
-              ),
-            ]
-          : [];
-      });
+      const context = !useMemory
+        ? []
+        : ids.flatMap((id) => {
+            const prior = (memory.data ?? [])
+              .filter((row) => row.agencyId === id)
+              .map((row) => JSON.parse(row.json) as Deal)
+              .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+            return prior
+              ? [
+                  event(
+                    id,
+                    0,
+                    'inspect',
+                    `Retrieved prior agreement ${prior.id.slice(0, 8)} from shared graph memory (${prior.status}). ${prior.reason ?? 'Previous terms retained as context.'} Rechecked current capacity and constraints before this proposal.`,
+                  ),
+                ]
+              : [];
+          });
       const deal: Deal = {
         id: randomUUID(),
         runId,
@@ -227,6 +308,21 @@ export class Store {
         rounds: result.rounds,
         reason: result.reason,
         totalCredits: result.legs.reduce((n, l) => n + l.credits, 0),
+        requestedMode: mode,
+        executedMode: mode === 'model' && policyResult.accepted ? 'model' : 'policy',
+        model: result.reportedModels?.join(', ') || undefined,
+        requestedModel: config?.name,
+        modelProvider: config
+          ? new URL(config.baseUrl).origin + new URL(config.baseUrl).pathname
+          : undefined,
+        modelIdentityKnown:
+          mode === 'model' &&
+          policyResult.accepted &&
+          result.modelIdentityKnown === true &&
+          Boolean(result.reportedModels?.length),
+        useMemory: options.useMemory ?? true,
+        lessonIds: lessons.map((l) => l.id),
+        proposalId: result.proposalId ?? 'requested',
       };
       if (result.accepted) {
         for (const leg of deal.legs)
@@ -240,8 +336,6 @@ export class Store {
           ),
         );
       }
-      const advice = await advise(deal);
-      if (advice) deal.events.push(event('advisor', result.rounds, 'advisor', advice));
       state.deals.unshift(deal);
       await this.write(state);
       return deal;
@@ -363,5 +457,49 @@ export class Store {
   async close(): Promise<void> {
     await this.tail;
     await this.connection.close();
+  }
+  async recordLesson(dealId: string, agencyId: string, preferredHours: number): Promise<Lesson> {
+    return this.exclusive(async () => {
+      const state = await this.read(),
+        deal = this.getDeal(state, dealId);
+      if (!deal.agencyIds.includes(agencyId))
+        throw new DomainError('The source negotiation does not involve this agency.', 400);
+      if (
+        !Number.isFinite(preferredHours) ||
+        preferredHours < 0.25 ||
+        preferredHours > 1000 ||
+        preferredHours * 4 !== Math.round(preferredHours * 4)
+      )
+        throw new DomainError(
+          'Preferred scope must be a quarter-hour value between 0.25 and 1000.',
+          400,
+        );
+      if (state.lessons.length >= 500)
+        throw new DomainError(
+          'This demo has reached its lesson limit. Export history before resetting.',
+        );
+      for (const prior of state.lessons) if (prior.agencyId === agencyId) prior.active = false;
+      const lesson: Lesson = {
+        id: randomUUID(),
+        agencyId,
+        dealId,
+        preferredHours,
+        statement: `Participant feedback: prefer receiving at most ${preferredHours}h in a new exchange.`,
+        createdAt: new Date().toISOString(),
+        active: true,
+      };
+      state.lessons.unshift(lesson);
+      const e = event(
+        agencyId,
+        deal.rounds,
+        'inspect',
+        `Participant taught a future scope preference of ${preferredHours}h. Hard profile constraints are unchanged.`,
+      );
+      e.tool = 'remember_preference';
+      e.evidenceIds = [lesson.id];
+      deal.events.push(e);
+      await this.write(state);
+      return lesson;
+    });
   }
 }

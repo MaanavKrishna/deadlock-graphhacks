@@ -30,13 +30,17 @@ import Network, { Avatar } from './components/Network';
 import NegotiationRoom from './components/NegotiationRoom';
 import AgencyDirectory, { AgencyEditor } from './components/AgencyDirectory';
 import History from './components/History';
+import MemoryView from './components/MemoryView';
 
-type View = 'exchange' | 'agencies' | 'history' | 'guide';
+type View = 'exchange' | 'agencies' | 'history' | 'memory' | 'guide';
 export default function App() {
   const [state, setState] = useState<Snapshot>();
   const [view, setView] = useState<View>('exchange');
   const [candidate, setCandidate] = useState<Candidate>();
   const [dealId, setDealId] = useState<string>();
+  const [agentMode, setAgentMode] = useState<'policy' | 'model'>('policy');
+  const [useMemory, setUseMemory] = useState(true);
+  const [resetScenario, setResetScenario] = useState<'starter' | 'launch' | 'empty'>('starter');
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [notice, setNotice] = useState('');
@@ -51,6 +55,7 @@ export default function App() {
     const s = await api<Snapshot>('/state');
     setState(s);
     if (initial && s.deals.length) setDealId(s.deals[0].id);
+    if (initial) setAgentMode(s.modelConfigured ? 'model' : 'policy');
     return s;
   }
   useEffect(() => {
@@ -86,7 +91,12 @@ export default function App() {
   async function startNegotiation() {
     if (!candidate || !latestRun) return;
     const d = await action(() =>
-      api<Deal>('/negotiate', { runId: latestRun.id, agencyIds: candidate.agencyIds }),
+      api<Deal>('/negotiate', {
+        runId: latestRun.id,
+        agencyIds: candidate.agencyIds,
+        mode: agentMode,
+        useMemory,
+      }),
     );
     if (d) {
       setDealId(d.id);
@@ -124,6 +134,7 @@ export default function App() {
     { id: 'exchange' as const, label: 'Exchange desk', icon: NetworkIcon },
     { id: 'agencies' as const, label: 'Agencies', icon: Users },
     { id: 'history' as const, label: 'Activity', icon: HistoryIcon },
+    { id: 'memory' as const, label: 'Memory', icon: BookOpen },
   ];
   const available = state?.agencies.filter((a) => a.active).length ?? 0,
     pending = state?.deals.filter((d) => d.status === 'awaiting_approval').length ?? 0;
@@ -200,11 +211,32 @@ export default function App() {
                   ? 'Agencies'
                   : view === 'history'
                     ? 'Activity'
-                    : 'Guide & settings'}
+                    : view === 'memory'
+                      ? 'Agent memory'
+                      : 'Guide & settings'}
             </strong>
           </div>
           <div className="topbar-right">
-            <span className="demo-badge">Synthetic demo</span>
+            <select
+              aria-label="Workspace setup"
+              className="scenario-select"
+              value={state?.scenario ?? 'starter'}
+              disabled={busy || !state}
+              onChange={(e) => {
+                setResetScenario(e.target.value as 'starter' | 'launch' | 'empty');
+                setResetOpen(true);
+              }}
+            >
+              <option value="starter">Sample · 6 agencies</option>
+              <option value="launch">Challenge · 10 agencies</option>
+              <option value="empty">New empty workspace</option>
+              <option value="custom" disabled>
+                Your workspace
+              </option>
+            </select>
+            <span className="demo-badge">
+              {state?.synthetic ? 'Sample data' : 'Your workspace'}
+            </span>
             <button
               className="icon-button"
               aria-label="Refresh workspace"
@@ -228,7 +260,9 @@ export default function App() {
                     ? 'Different strengths. Shared possibilities.'
                     : view === 'history'
                       ? 'Nothing gets lost along the way.'
-                      : 'A little context goes a long way.'}
+                      : view === 'memory'
+                        ? 'A better next time starts here.'
+                        : 'A little context goes a long way.'}
               </h1>
               <p>
                 {view === 'exchange'
@@ -237,7 +271,9 @@ export default function App() {
                     ? 'Bring an offer, name a need, and let the connections do their work.'
                     : view === 'history'
                       ? 'Revisit the paths, proposals and decisions that brought everyone together.'
-                      : 'Understand the exchange, the agents, and the limits of this workspace.'}
+                      : view === 'memory'
+                        ? 'Preferences persist in the graph, with a path back to the decision that taught them.'
+                        : 'Understand the exchange, the agents, and the limits of this workspace.'}
               </p>
             </div>
             {view === 'exchange' && (
@@ -312,6 +348,58 @@ export default function App() {
                         <strong>{pending}</strong> awaiting approval
                       </span>
                     </div>
+                    <div className="agent-controls">
+                      <label>
+                        Representatives
+                        <select
+                          aria-label="Negotiation mode"
+                          value={agentMode}
+                          disabled={busy}
+                          onChange={(e) => setAgentMode(e.target.value as 'policy' | 'model')}
+                        >
+                          <option value="policy">Policy simulation</option>
+                          <option value="model" disabled={!state.modelConfigured}>
+                            Live model agents{state.modelConfigured ? '' : ' — configure .env'}
+                          </option>
+                        </select>
+                      </label>
+                      <label className="memory-switch">
+                        <input
+                          type="checkbox"
+                          checked={useMemory}
+                          disabled={busy}
+                          onChange={(e) => setUseMemory(e.target.checked)}
+                        />
+                        Use learned preferences
+                      </label>
+                      <button
+                        className="text-button"
+                        disabled={busy}
+                        onClick={() => action(() => refresh(), 'Model configuration refreshed.')}
+                      >
+                        <RefreshCw size={13} />
+                        Refresh configuration
+                      </button>
+                      <span>
+                        {state.modelConfigured
+                          ? `Ready: ${state.modelName}`
+                          : 'No model key configured'}
+                      </span>
+                    </div>
+                    {state.agencies.length === 0 && (
+                      <div className="workspace-onboarding">
+                        <h2>Your network starts with an offer.</h2>
+                        <p>
+                          Add at least three agencies with complementary services, capacity and
+                          deadlines. Representatives negotiate the terms; you review and approve the
+                          proposed exchange.
+                        </p>
+                        <button className="primary" onClick={() => setEditor(null)}>
+                          <Plus size={15} />
+                          Add first agency
+                        </button>
+                      </div>
+                    )}
                     <Network
                       agencies={state.agencies}
                       selectedIds={deal?.agencyIds ?? candidate?.agencyIds ?? []}
@@ -389,6 +477,7 @@ export default function App() {
                             return (
                               <button
                                 key={c.id}
+                                disabled={busy}
                                 className={`opportunity ${selected ? 'selected' : ''}`}
                                 onClick={() => {
                                   setCandidate(c);
@@ -404,7 +493,9 @@ export default function App() {
                                   </span>
                                   <span className="credit-total">
                                     {c.estimatedCredits.toLocaleString()}{' '}
-                                    <small>credits exchanged</small>
+                                    <small>
+                                      {c.feasible ? 'proposed credits' : 'requested credits'}
+                                    </small>
                                   </span>
                                   {selected ? (
                                     <Check size={16} className="purple" />
@@ -454,6 +545,7 @@ export default function App() {
                     deal={deal}
                     agencies={state.agencies}
                     busy={busy}
+                    sampleData={state.synthetic}
                     onNegotiate={startNegotiation}
                     onApprove={(id) => {
                       if (deal)
@@ -471,6 +563,13 @@ export default function App() {
                     }}
                     onWithdraw={withdraw}
                     onReroute={discover}
+                    onRemember={(agencyId, preferredHours) => {
+                      if (deal)
+                        action(
+                          () => api(`/deals/${deal.id}/lessons`, { agencyId, preferredHours }),
+                          'Preference saved in the graph. Future representatives can use it.',
+                        );
+                    }}
                   />
                 </div>
               )}
@@ -485,6 +584,16 @@ export default function App() {
                 <History
                   deals={state.deals}
                   runs={state.runs}
+                  onOpen={(d) => {
+                    setDealId(d.id);
+                    setCandidate(undefined);
+                    setView('exchange');
+                  }}
+                />
+              )}
+              {view === 'memory' && (
+                <MemoryView
+                  state={state}
                   onOpen={(d) => {
                     setDealId(d.id);
                     setCandidate(undefined);
@@ -562,7 +671,11 @@ export default function App() {
                         </div>
                         <div>
                           <dt>Data</dt>
-                          <dd>Synthetic agencies only</dd>
+                          <dd>
+                            {state.synthetic
+                              ? 'Authored sample agencies'
+                              : 'User-entered agency profiles'}
+                          </dd>
                         </div>
                         <div>
                           <dt>Memory</dt>
@@ -570,18 +683,28 @@ export default function App() {
                         </div>
                       </dl>
                       <p>
-                        The default agents follow explicit policies. An optional server-configured
-                        model can explain the outcome; it cannot change terms or approve an
+                        Live model representatives inspect graph context and choose to accept,
+                        counter or reject a validated proposal. Policy simulation is also available.
+                        Learned preferences can change the next proposal; humans approve every
                         agreement.
                       </p>
                     </article>
                     <article className="settings-card">
                       <h3>A safe place to try things</h3>
                       <p>
-                        Approvals reserve fictional service capacity. No agency is contacted, no
-                        money changes hands, and no service is delivered.
+                        {state.synthetic
+                          ? 'Sample approvals reserve fictional service capacity.'
+                          : 'Approvals reserve the service capacity entered in this workspace.'}{' '}
+                        The app records agreed capacity. No agency is contacted, no money changes
+                        hands, and no service is delivered.
                       </p>
-                      <button className="secondary" onClick={() => setResetOpen(true)}>
+                      <button
+                        className="secondary"
+                        onClick={() => {
+                          setResetScenario('starter');
+                          setResetOpen(true);
+                        }}
+                      >
                         <RotateCcw size={15} />
                         Reset demo workspace
                       </button>
@@ -618,17 +741,19 @@ export default function App() {
       )}
       {resetOpen && (
         <ResetDialog
+          scenario={resetScenario}
           busy={busy}
           onClose={() => setResetOpen(false)}
           onConfirm={async () => {
             const result = await action(
-              () => api<Snapshot>('/reset', { confirm: true }),
-              'Demo restored. A fresh network is ready.',
+              () => api<Snapshot>('/reset', { confirm: true, scenario: resetScenario }),
+              'Workspace ready.',
             );
             if (result) {
               setCandidate(undefined);
               setDealId(undefined);
               setResetOpen(false);
+              setView(resetScenario === 'empty' ? 'agencies' : 'exchange');
             }
           }}
         />
@@ -637,10 +762,12 @@ export default function App() {
   );
 }
 function ResetDialog({
+  scenario,
   busy,
   onClose,
   onConfirm,
 }: {
+  scenario: 'starter' | 'launch' | 'empty';
   busy: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -660,17 +787,29 @@ function ResetDialog({
       }}
     >
       <RotateCcw size={25} />
-      <h2 id="reset-title">Start with a fresh network?</h2>
+      <h2 id="reset-title">
+        Load the{' '}
+        {scenario === 'empty'
+          ? 'empty workspace'
+          : scenario === 'launch'
+            ? 'launch challenge'
+            : 'sample network'}
+        ?
+      </h2>
       <p>
-        This removes the demo’s agreements, approvals, custom profiles and activity. The original
-        six agencies will be restored.
+        This replaces agencies and clears agreements, approvals, lessons and activity.
+        {scenario === 'empty'
+          ? ' Add your own agency offers, needs and constraints to begin.'
+          : scenario === 'launch'
+            ? ' The ten-agency challenge includes unequal rates, a four-party exchange and a deadline conflict.'
+            : ' The original six agencies will be restored.'}
       </p>
       <div className="modal-actions">
         <button className="secondary" disabled={busy} onClick={onClose} autoFocus>
           Keep workspace
         </button>
         <button className="primary" disabled={busy} onClick={onConfirm}>
-          {busy ? 'Resetting…' : 'Reset demo'}
+          {busy ? 'Preparing…' : 'Replace workspace'}
         </button>
       </div>
     </dialog>

@@ -22,15 +22,22 @@ export default function Network({
   selectedIds: string[];
   onSelectAgency: (a: Agency) => void;
 }) {
+  const canvasHeight = agencies.length > 8 ? 600 : 400;
   const positions = useMemo(
     () =>
       new Map(
         agencies.map((a, i) => {
           const angle = (i / agencies.length) * 2 * Math.PI - Math.PI / 2;
-          return [a.id, { x: 380 + 270 * Math.cos(angle), y: 200 + 137 * Math.sin(angle) }];
+          return [
+            a.id,
+            {
+              x: 380 + 270 * Math.cos(angle),
+              y: canvasHeight / 2 + (canvasHeight / 2 - 63) * Math.sin(angle),
+            },
+          ];
         }),
       ),
-    [agencies],
+    [agencies, canvasHeight],
   );
   const edges = agencies.flatMap((a) =>
     agencies.filter((b) => a.id !== b.id && a.offer === b.need).map((b) => ({ from: a, to: b })),
@@ -53,9 +60,9 @@ export default function Network({
           {agencies.filter((a) => a.active).length} available
         </span>
       </div>
-      <div className="network-canvas">
+      <div className={`network-canvas ${agencies.length > 8 ? 'many' : ''}`}>
         <svg
-          viewBox="0 0 760 400"
+          viewBox={`0 0 760 ${canvasHeight}`}
           preserveAspectRatio="none"
           aria-hidden="true"
           className="network-wires"
@@ -127,7 +134,7 @@ export default function Network({
             <button
               key={a.id}
               className={`network-node ${selectedIds.includes(a.id) ? 'selected' : ''} ${!a.active ? 'unavailable' : ''}`}
-              style={{ left: `${(p.x / 760) * 100}%`, top: `${(p.y / 400) * 100}%` }}
+              style={{ left: `${(p.x / 760) * 100}%`, top: `${(p.y / canvasHeight) * 100}%` }}
               onClick={() => onSelectAgency(a)}
               aria-label={`View ${a.name}`}
             >

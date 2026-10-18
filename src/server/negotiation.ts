@@ -12,6 +12,45 @@ export function event(
 export function canonicalCycle(ids: string[]): string {
   return ids.map((_, i) => [...ids.slice(i), ...ids.slice(0, i)].join('|')).sort()[0] ?? '';
 }
+export function validateLegs(agencies: Agency[], legs: Leg[]): string | undefined {
+  if (
+    agencies.length < 3 ||
+    agencies.length > 4 ||
+    new Set(agencies.map((a) => a.id)).size !== agencies.length ||
+    legs.length !== agencies.length
+  )
+    return 'Invalid participant cycle.';
+  for (let i = 0; i < agencies.length; i++) {
+    const a = agencies[i],
+      next = agencies[(i + 1) % agencies.length],
+      out = legs[i],
+      inc = legs[(i + legs.length - 1) % legs.length];
+    if (
+      !a.active ||
+      out.from !== a.id ||
+      out.to !== next.id ||
+      out.service !== a.offer ||
+      a.offer !== next.need
+    )
+      return 'The proposal does not follow the current graph path.';
+    if (
+      !Number.isFinite(out.hours) ||
+      out.hours * 4 !== Math.round(out.hours * 4) ||
+      out.hours < next.minReceiveHours ||
+      out.hours > next.requestHours
+    )
+      return 'Proposed hours violate the recipient scope limits.';
+    if (out.hours > a.capacityHours - a.reservedHours - a.committedHours)
+      return 'Proposed hours exceed available capacity.';
+    if (out.deliveryDays !== a.deliveryDays || inc.deliveryDays > a.deadlineDays)
+      return 'Proposed delivery violates a deadline.';
+    if (
+      out.credits !== out.hours * a.hourlyCredits ||
+      out.credits > inc.credits * (1 + a.maxImbalancePct / 100) + 0.001
+    )
+      return 'Proposed credits violate the value balance.';
+  }
+}
 const floorQuarter = (n: number) => Math.floor((n + 1e-8) * 4) / 4;
 export function negotiate(agencies: Agency[]): NegotiationResult {
   const events: NegotiationEvent[] = [];
