@@ -2,6 +2,13 @@
 
 Project: **Deadlock**. Team: **ContextSense**.
 
+## Public links
+
+- Repository: https://github.com/MaanavKrishna/deadlock-graphhacks
+- Video: https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.2.0/deadlock-live-demo.mp4
+- Release/downloads: https://github.com/MaanavKrishna/deadlock-graphhacks/releases/tag/v0.2.0
+- Deployment path: complete local setup in README (public hosting not claimed).
+
 ## Suggested description
 
 Deadlock is a graph-native capacity exchange for small creative-agency communities. Agency representatives negotiate three- and four-party service swaps that direct pairwise matching cannot find. FalkorDB discovers exchange cycles, stores shared negotiation memory, and preserves the evidence behind each agreement. If a participant withdraws, pending holds release and the graph finds an alternative. Humans approve each member before the cycle commits together.
@@ -27,9 +34,9 @@ Deadlock is a graph-native capacity exchange for small creative-agency communiti
 
 - [ ] Review the source and make a meaningful participant contribution; verify and understand the implementation.
 - [ ] Be able to explain the graph model, exact cycle query, negotiation limits, persistence and transaction boundary.
-- [ ] Create/push a **public repository** and paste its actual URL into the submission.
-- [ ] Record or review a working demo video, publish it, and paste its actual URL.
-- [ ] Add the public repository/video URLs to README if desired.
+- [ ] Paste the published repository URL into the submission.
+- [ ] Review the published narrated video and paste its URL into the submission.
+- [x] Public repository/video URLs included in README.
 - [ ] Submit before the event deadline shown on the official site.
 - [ ] Name both entered tracks in the form.
 - [ ] Disclose AI coding assistance accurately.
