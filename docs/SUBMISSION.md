@@ -29,7 +29,7 @@ Deadlock is a graph-native capacity exchange for small creative-agency communiti
 - [x] AI-assistance disclosure.
 - [x] Demo storyboard and recording script.
 - [x] Earlier v0.2 narrated recording (`artifacts/deadlock-live-demo.mp4`, disclosed synthetic voice).
-- [x] v0.3 video (2:13) recorded from the running app with live Claude Haiku 5.5 representatives; narration is a disclosed synthetic voice.
+- [x] v0.3 video (2:24) recorded from the running app with live Claude Haiku 5.5 representatives; narration is a disclosed AI-generated voice (ElevenLabs).
 - [x] v0.3: landing, docs, workspace v2 with motion, FalkorDB algorithms, withdrawal what-if, recruitment what-if, self-learning memory, Ask with sources, MCP server, live negotiation streaming, compare-and-swap writes, access key, rate limits.
 - [x] Automated tests plus desktop/mobile browser verification.
 - [x] Docker configuration supplied (native setup is the tested path).
