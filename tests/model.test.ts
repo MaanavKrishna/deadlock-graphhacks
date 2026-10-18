@@ -122,3 +122,69 @@ it('does not accept malformed provider output or a transport timeout', async () 
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 });
+it('asks once more when a rejection argues for accepting, and keeps genuine rejections', async () => {
+  const replies: { name: string; args: object }[] = [];
+  const server = createServer(async (req, res) => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const body = JSON.parse(Buffer.concat(chunks).toString());
+    const step = body.messages.filter((m: any) => m.role === 'tool').length;
+    const reply = step === 0 ? { name: 'inspect_exchange', args: {} } : replies[step - 1];
+    res.setHeader('Content-Type', 'application/json');
+    res.end(
+      JSON.stringify({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              tool_calls: [
+                {
+                  id: `c${step}`,
+                  type: 'function',
+                  function: { name: reply.name, arguments: JSON.stringify(reply.args) },
+                },
+              ],
+            },
+          },
+        ],
+      }),
+    );
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const config: ModelConfig = {
+    key: 'synthetic',
+    name: 'test',
+    baseUrl: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+  };
+  const a = agencies(),
+    p = buildProposals(a),
+    context = {
+      agency: a[0],
+      participants: a,
+      current: p[0],
+      proposals: p,
+      lessons: [],
+      useMemory: true,
+      round: 1,
+    };
+  try {
+    replies.splice(
+      0,
+      replies.length,
+      {
+        name: 'reject_offer',
+        args: { reason: 'Accepting the current terms is the appropriate decision.' },
+      },
+      { name: 'accept_offer', args: { reason: 'Terms meet my minimum.' } },
+    );
+    expect((await decideWithModel(context, config)).tool).toBe('accept_offer');
+    replies.splice(0, replies.length, {
+      name: 'reject_offer',
+      args: { reason: 'Incoming hours cannot meet our launch objective; we cannot accept.' },
+    });
+    expect((await decideWithModel(context, config)).tool).toBe('reject_offer');
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
