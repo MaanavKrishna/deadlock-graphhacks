@@ -1,0 +1,27 @@
+services:
+  graph:
+    image: falkordb/falkordb:v4.16.3
+    environment:
+      REDIS_ARGS: "--appendonly yes --appendfsync always"
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - graph-data:/var/lib/falkordb/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  app:
+    build: .
+    environment:
+      FALKORDB_URL: redis://graph:6379
+      FALKORDB_GRAPH: deadlock
+      HOST: 0.0.0.0
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      graph:
+        condition: service_healthy
+volumes:
+  graph-data:
