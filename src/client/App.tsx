@@ -527,6 +527,21 @@ export default function App() {
                                   </span>
                                   <span>{c.reason ?? 'No direct swap needed'}</span>
                                 </div>
+                                {c.history?.tradedLegs || c.history?.priorFailures.length ? (
+                                  <div className="candidate-memory">
+                                    {c.history.tradedLegs > 0 && (
+                                      <span className="memory-proven">
+                                        Graph memory: {c.history.tradedLegs} of {c.agencyIds.length}{' '}
+                                        legs traded before
+                                      </span>
+                                    )}
+                                    {c.history.priorFailures.map((f) => (
+                                      <span className="memory-failed" key={f.dealId}>
+                                        Failed before ({f.dealId.slice(0, 8)}): {f.reason}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : null}
                               </button>
                             );
                           })}

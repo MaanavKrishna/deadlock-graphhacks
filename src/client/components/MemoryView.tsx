@@ -123,6 +123,46 @@ export default function MemoryView({
           })
         )}
       </div>
+      <div className="section-title">
+        <div>
+          <h2>Learned from outcomes</h2>
+          <p>
+            Written automatically. Committed agreements become TRADED_WITH partner edges; failed
+            negotiations become insights that discovery flags until the blocking profile changes.
+          </p>
+        </div>
+      </div>
+      <div className="lesson-list">
+        {state.insights.length === 0 ? (
+          <div className="large-empty">
+            <h3>No outcomes recorded yet.</h3>
+            <p>Failed negotiations and completed partnerships will appear here.</p>
+          </div>
+        ) : (
+          state.insights.map((insight) => {
+            const a = state.agencies.find((a) => a.id === insight.agencyId),
+              source = state.deals.find((d) => d.id === insight.dealId),
+              stale = a ? a.revision !== insight.revision : true;
+            return (
+              <article key={insight.id} className={`lesson-card ${stale ? 'superseded' : ''}`}>
+                <div>
+                  <strong>{a?.name ?? insight.agencyId}</strong>
+                  <span>{stale ? 'Profile changed since' : 'Applies to current profile'}</span>
+                </div>
+                <p>{insight.reason}</p>
+                <div className="lesson-source">
+                  <span>Insight {insight.id.slice(0, 8)}</span>
+                  {source && (
+                    <button className="text-button" onClick={() => onOpen(source)}>
+                      Source negotiation {insight.dealId.slice(0, 8)}
+                    </button>
+                  )}
+                </div>
+              </article>
+            );
+          })
+        )}
+      </div>
     </section>
   );
 }

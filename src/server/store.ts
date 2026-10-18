@@ -9,6 +9,7 @@ import type {
   Service,
   Impact,
   LoopStats,
+  Insight,
 } from '../shared/types';
 import { services } from '../shared/types';
 import { canonicalCycle, event, negotiate as negotiateTerms } from './negotiation';
@@ -35,6 +36,7 @@ const CYCLE_WITHOUT_QUERY = `MATCH p=(a:Agency)-[:CAN_SERVE*3..4]->(a)
 WHERE all(n IN nodes(p) WHERE n.active = true AND n.id <> $excluded)
 RETURN [n IN nodes(p) | n.id] AS ids LIMIT 2000`;
 type State = Pick<Snapshot, 'agencies' | 'deals' | 'runs' | 'lessons'> & {
+  insights?: Insight[];
   workspace?: { scenario: 'starter' | 'launch' | 'custom'; synthetic: boolean };
   // Graph revision this state was read at; undefined means the graph has no workspace yet.
   revision?: number;
@@ -91,9 +93,9 @@ export class Store {
       json: string;
       revision: number | null;
     }>(
-      'MATCH (n) WHERE n:Agency OR n:Deal OR n:Run OR n:Lesson OR n:Workspace RETURN labels(n)[0] AS kind, n.json AS json, n.revision AS revision',
+      'MATCH (n) WHERE n:Agency OR n:Deal OR n:Run OR n:Lesson OR n:Insight OR n:Workspace RETURN labels(n)[0] AS kind, n.json AS json, n.revision AS revision',
     );
-    const state: State = { agencies: [], deals: [], runs: [], lessons: [] };
+    const state: State = { agencies: [], deals: [], runs: [], lessons: [], insights: [] };
     for (const row of result.data ?? []) {
       if (row.kind === 'Workspace') {
         state.workspace = JSON.parse(row.json);
@@ -103,6 +105,7 @@ export class Store {
       if (row.kind === 'Deal') state.deals.push(JSON.parse(row.json));
       if (row.kind === 'Run') state.runs.push(JSON.parse(row.json));
       if (row.kind === 'Lesson') state.lessons.push(JSON.parse(row.json));
+      if (row.kind === 'Insight') state.insights!.push(JSON.parse(row.json));
     }
     state.agencies.sort((a, b) => a.name.localeCompare(b.name));
     state.deals.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -151,13 +154,14 @@ export class Store {
         id: a.id,
         name: a.name,
         active: a.active,
+        revision: a.revision,
         offer: a.offer,
         need: a.need,
         json: JSON.stringify(a),
       }))
         params[`${v}${key}`] = value;
       lines.push(
-        `CREATE (${v}:Agency {id:$${v}id,name:$${v}name,active:$${v}active,offer:$${v}offer,need:$${v}need,json:$${v}json})`,
+        `CREATE (${v}:Agency {id:$${v}id,name:$${v}name,active:$${v}active,revision:$${v}revision,offer:$${v}offer,need:$${v}need,json:$${v}json})`,
       );
       lines.push(
         `CREATE (${v})-[:OFFERS]->(s${services.indexOf(a.offer)}) CREATE (${v})-[:NEEDS]->(s${services.indexOf(a.need)})`,
@@ -181,6 +185,15 @@ export class Store {
       d.agencyIds.forEach((id) => {
         if (agencyVars.has(id)) lines.push(`CREATE (${v})-[:INVOLVES]->(${agencyVars.get(id)})`);
       });
+      // Completed agreements become durable partner history between agencies.
+      if (d.status === 'committed')
+        d.legs.forEach((leg, j) => {
+          const from = agencyVars.get(leg.from),
+            to = agencyVars.get(leg.to);
+          if (!from || !to) return;
+          params[`${v}t${j}`] = leg.hours;
+          lines.push(`CREATE (${from})-[:TRADED_WITH {dealId:$${v}id,hours:$${v}t${j}}]->(${to})`);
+        });
       d.events.forEach((e, j) => {
         const ev = `e${i}_${j}`;
         params[`${ev}id`] = e.id;
@@ -202,6 +215,17 @@ export class Store {
         lines.push(`CREATE (${v})-[:ABOUT]->(${agencyVars.get(lesson.agencyId)})`);
       if (dealVars.has(lesson.dealId))
         lines.push(`CREATE (${v})-[:LEARNED_FROM]->(${dealVars.get(lesson.dealId)})`);
+    });
+    (state.insights ?? []).forEach((insight, i) => {
+      const v = `insight${i}`;
+      params[`${v}id`] = insight.id;
+      params[`${v}json`] = JSON.stringify(insight);
+      params[`${v}revision`] = insight.revision;
+      lines.push(`CREATE (${v}:Insight {id:$${v}id,json:$${v}json,revision:$${v}revision})`);
+      if (agencyVars.has(insight.agencyId))
+        lines.push(`CREATE (${v})-[:ABOUT]->(${agencyVars.get(insight.agencyId)})`);
+      if (dealVars.has(insight.dealId))
+        lines.push(`CREATE (${v})-[:LEARNED_FROM]->(${dealVars.get(insight.dealId)})`);
     });
     lines.push(
       'WITH rev, count(*) AS written MATCH (provider:Agency)-[:OFFERS]->(service:Service)<-[:NEEDS]-(recipient:Agency) WHERE provider.id <> recipient.id CREATE (provider)-[:CAN_SERVE {service:service.id}]->(recipient) RETURN count(*) AS edges',
@@ -285,6 +309,7 @@ export class Store {
     return {
       ...data,
       loops: this.loopStats(await this.loops()),
+      insights: data.insights ?? [],
       scenario:
         data.workspace?.scenario ??
         (data.agencies.some((a) => a.id === 'premiere')
@@ -319,6 +344,7 @@ export class Store {
         deals: [],
         runs: [],
         lessons: [],
+        insights: [],
       });
       return this.snapshot();
     });
@@ -328,6 +354,21 @@ export class Store {
       const started = performance.now(),
         state = await this.read();
       const result = await this.connection.graph.roQuery<{ ids: string[] }>(CYCLE_QUERY);
+      // Graph memory: partner history and failures that still apply to current profiles.
+      const traded = await this.connection.graph.roQuery<{
+        from: string;
+        to: string;
+        deals: string[];
+      }>(
+        'MATCH (a:Agency)-[t:TRADED_WITH]->(b:Agency) RETURN a.id AS from, b.id AS to, collect(DISTINCT t.dealId) AS deals',
+      );
+      const current = await this.connection.graph.roQuery<{ json: string }>(
+        'MATCH (i:Insight)-[:ABOUT]->(a:Agency) WHERE i.revision = a.revision RETURN i.json AS json',
+      );
+      const tradedLegs = new Map(
+        (traded.data ?? []).map((row) => [`${row.from}>${row.to}`, row.deals]),
+      );
+      const insights = (current.data ?? []).map((row) => JSON.parse(row.json) as Insight);
       const found = new Map<string, Candidate>();
       for (const row of result.data ?? []) {
         const ids = row.ids.slice(0, -1);
@@ -344,11 +385,27 @@ export class Store {
           estimatedCredits: result.legs.reduce((s, l) => s + l.credits, 0),
           feasible: result.accepted,
           reason: result.reason,
+          history: (() => {
+            const legDeals = ordered.flatMap(
+              (id, i) => tradedLegs.get(`${id}>${ordered[(i + 1) % ordered.length]}`) ?? [],
+            );
+            return {
+              tradedLegs: ordered.filter((id, i) =>
+                tradedLegs.has(`${id}>${ordered[(i + 1) % ordered.length]}`),
+              ).length,
+              sourceDealIds: [...new Set(legDeals)],
+              priorFailures: insights
+                .filter((i) => i.loopKey === key)
+                .map((i) => ({ agencyId: i.agencyId, dealId: i.dealId, reason: i.reason })),
+            };
+          })(),
         });
       }
       const candidates = [...found.values()].sort(
         (a, b) =>
           Number(b.feasible) - Number(a.feasible) ||
+          (a.history?.priorFailures.length ?? 0) - (b.history?.priorFailures.length ?? 0) ||
+          (b.history?.tradedLegs ?? 0) - (a.history?.tradedLegs ?? 0) ||
           b.estimatedCredits - a.estimatedCredits ||
           a.id.localeCompare(b.id),
       );
@@ -467,6 +524,32 @@ export class Store {
             result.rounds,
             'reserve',
             'All representatives agree. Capacity held for this entire cycle; waiting for each member’s approval.',
+          ),
+        );
+      }
+      const blocker = [...result.events].reverse().find((e) => e.action === 'reject')?.actor;
+      const blocking = agents.find((a) => a.id === blocker);
+      // Transport failures and timeouts say nothing about the agency, so they are not remembered.
+      const transient = /^(Model request|Negotiation time budget)/.test(result.reason ?? '');
+      if (!result.accepted && blocking && !transient) {
+        state.insights = [
+          {
+            id: randomUUID(),
+            agencyId: blocking.id,
+            dealId: deal.id,
+            loopKey: canonicalCycle(ids),
+            reason: result.reason ?? 'Negotiation rejected.',
+            revision: blocking.revision,
+            createdAt: now,
+          },
+          ...(state.insights ?? []),
+        ].slice(0, 500);
+        deal.events.push(
+          event(
+            'coordinator',
+            result.rounds,
+            'inspect',
+            `Remembered this failure on ${blocking.name}'s current profile. Future discovery will flag this loop until that profile changes.`,
           ),
         );
       }

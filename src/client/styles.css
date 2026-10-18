@@ -2910,3 +2910,18 @@ time {
   color: #8a3d0b;
   font-weight: 600;
 }
+
+.candidate-memory {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.memory-proven {
+  color: #0b6e64;
+  font-weight: 600;
+}
+.memory-failed {
+  color: #8a3d0b;
+}

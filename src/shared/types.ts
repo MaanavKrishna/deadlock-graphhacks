@@ -82,6 +82,12 @@ export interface Candidate {
   estimatedCredits: number;
   feasible: boolean;
   reason?: string;
+  // Graph memory consulted at discovery time.
+  history?: {
+    tradedLegs: number;
+    sourceDealIds: string[];
+    priorFailures: { agencyId: string; dealId: string; reason?: string }[];
+  };
 }
 export interface Run {
   id: string;
@@ -124,6 +130,7 @@ export interface Snapshot {
   modelConfigured?: boolean;
   modelName?: string;
   lessons: Lesson[];
+  insights: Insight[];
   scenario?: 'starter' | 'launch' | 'custom';
   accessRequired?: boolean;
 }
@@ -150,6 +157,17 @@ export interface Lesson {
   statement: string;
   createdAt: string;
   active?: boolean;
+}
+// Episodic memory written automatically when a negotiation fails. It applies only while
+// the blocking agency's profile revision is unchanged.
+export interface Insight {
+  id: string;
+  agencyId: string;
+  dealId: string;
+  loopKey: string;
+  reason: string;
+  revision: number;
+  createdAt: string;
 }
 export interface AgentContext {
   agency: Agency;
