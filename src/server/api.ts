@@ -1,6 +1,6 @@
 import express, { type ErrorRequestHandler } from 'express';
 import { z } from 'zod';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { DomainError, type Store } from './store';
 import { services } from '../shared/types';
 
@@ -25,7 +25,18 @@ const agencySchema = z.object({
   reservedHours: z.number().finite().min(0),
   committedHours: z.number().finite().min(0),
 });
-export function createApp(store: Store) {
+const digest = (value: string) => createHash('sha256').update(value).digest();
+// ACCESS_KEY protects actions that are destructive (workspace replacement) or spend the
+// operator's model credits. Everything else stays open so visitors can try the exchange.
+export function createApp(store: Store, options: { accessKey?: () => string | undefined } = {}) {
+  const accessKey = options.accessKey ?? (() => process.env.ACCESS_KEY?.trim() || undefined);
+  const requireKey = (req: express.Request) => {
+    const expected = accessKey();
+    if (!expected) return;
+    const supplied = req.get('x-access-key') ?? '';
+    if (!timingSafeEqual(digest(supplied), digest(expected)))
+      throw new DomainError('This action needs the workspace access key.', 401);
+  };
   const app = express();
   app.disable('x-powered-by');
   app.use('/api', (req, res, next) => {
@@ -46,7 +57,9 @@ export function createApp(store: Store) {
     const s = await store.snapshot();
     res.json({ ok: true, database: s.database, agentMode: s.agentMode });
   });
-  app.get('/api/state', async (_req, res) => res.json(await store.snapshot()));
+  app.get('/api/state', async (_req, res) =>
+    res.json({ ...(await store.snapshot()), accessRequired: Boolean(accessKey()) }),
+  );
   app.post('/api/discover', async (_req, res) => res.json(await store.discover()));
   app.post('/api/negotiate', async (req, res) => {
     const body = z
@@ -61,6 +74,7 @@ export function createApp(store: Store) {
           .refine((ids) => new Set(ids).size === ids.length, 'Agencies must be distinct'),
       })
       .parse(req.body);
+    if (body.mode === 'model') requireKey(req);
     res.json(
       await store.negotiate(body.runId, body.agencyIds, {
         mode: body.mode,
@@ -104,6 +118,7 @@ export function createApp(store: Store) {
         scenario: z.enum(['starter', 'launch', 'empty']).optional(),
       })
       .parse(req.body);
+    requireKey(req);
     res.json(await store.reset(body.scenario));
   });
   app.get('/api/deals/:id/export', async (req, res) => {

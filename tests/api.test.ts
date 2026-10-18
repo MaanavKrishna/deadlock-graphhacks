@@ -86,3 +86,31 @@ it('exports a complete agreement and protects reset and cross-origin mutations',
       .status,
   ).toBe(403);
 });
+it('requires the access key for workspace replacement and paid model runs when one is configured', async () => {
+  const locked = createApp(store, { accessKey: () => 'correct horse' });
+  expect((await request(locked).get('/api/state')).status).toBe(200);
+  expect((await request(locked).post('/api/reset').send({ confirm: true })).status).toBe(401);
+  expect(
+    (await request(locked).post('/api/reset').set('x-access-key', 'wrong').send({ confirm: true }))
+      .status,
+  ).toBe(401);
+  const run = await request(locked).post('/api/discover').send({});
+  expect(run.status).toBe(200);
+  const model = await request(locked)
+    .post('/api/negotiate')
+    .send({ runId: run.body.id, agencyIds: run.body.candidates[0].agencyIds, mode: 'model' });
+  expect(model.status).toBe(401);
+  const policy = await request(locked)
+    .post('/api/negotiate')
+    .send({ runId: run.body.id, agencyIds: run.body.candidates[0].agencyIds, mode: 'policy' });
+  expect(policy.status).toBe(200);
+  expect(
+    (
+      await request(locked)
+        .post('/api/reset')
+        .set('x-access-key', 'correct horse')
+        .send({ confirm: true })
+    ).status,
+  ).toBe(200);
+  expect((await request(locked).get('/api/state')).body.accessRequired).toBe(true);
+});

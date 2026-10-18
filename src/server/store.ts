@@ -1,5 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import type { Agency, Candidate, Deal, Run, Snapshot, NegotiationOptions } from '../shared/types';
+import type {
+  Agency,
+  Candidate,
+  Deal,
+  Run,
+  Snapshot,
+  NegotiationOptions,
+  Service,
+} from '../shared/types';
 import { services } from '../shared/types';
 import { canonicalCycle, event, negotiate as negotiateTerms } from './negotiation';
 import { openGraph, type GraphConnection } from './graph';
@@ -22,6 +30,8 @@ WHERE all(n IN nodes(p) WHERE n.active = true)
 RETURN [n IN nodes(p) | n.id] AS ids LIMIT 2000`;
 type State = Pick<Snapshot, 'agencies' | 'deals' | 'runs' | 'lessons'> & {
   workspace?: { scenario: 'starter' | 'launch' | 'custom'; synthetic: boolean };
+  // Graph revision this state was read at; undefined means the graph has no workspace yet.
+  revision?: number;
 };
 
 export class Store {
@@ -38,13 +48,26 @@ export class Store {
       modelConfig?: () => ModelConfig | undefined;
     } = {},
   ): Promise<Store> {
-    const store = new Store(await openGraph(options), options.modelConfig ?? modelConfig);
+    return Store.attach(await openGraph(options), options.modelConfig);
+  }
+  // Several Store instances may share one graph (e.g. serverless replicas); writes are
+  // guarded by the graph-side workspace revision rather than this process's queue alone.
+  static async attach(
+    connection: GraphConnection,
+    resolveModel: () => ModelConfig | undefined = modelConfig,
+  ): Promise<Store> {
+    const store = new Store(connection, resolveModel);
     try {
       const result = await store.connection.graph.query<{ count: number }>(
         'MATCH (n) WHERE n:Agency OR n:Workspace RETURN count(n) AS count',
       );
       if (!result.data?.[0]?.count)
-        await store.write({ agencies: seedAgencies(), deals: [], runs: [], lessons: [] });
+        await store
+          .write({ agencies: seedAgencies(), deals: [], runs: [], lessons: [] })
+          .catch((error) => {
+            // Another instance seeded the empty graph first; its workspace is kept.
+            if (!(error instanceof DomainError)) throw error;
+          });
       return store;
     } catch (error) {
       await store.close();
@@ -57,12 +80,19 @@ export class Store {
     return result;
   }
   private async read(): Promise<State> {
-    const result = await this.connection.graph.roQuery<{ kind: string; json: string }>(
-      'MATCH (n) WHERE n:Agency OR n:Deal OR n:Run OR n:Lesson OR n:Workspace RETURN labels(n)[0] AS kind, n.json AS json',
+    const result = await this.connection.graph.roQuery<{
+      kind: string;
+      json: string;
+      revision: number | null;
+    }>(
+      'MATCH (n) WHERE n:Agency OR n:Deal OR n:Run OR n:Lesson OR n:Workspace RETURN labels(n)[0] AS kind, n.json AS json, n.revision AS revision',
     );
     const state: State = { agencies: [], deals: [], runs: [], lessons: [] };
     for (const row of result.data ?? []) {
-      if (row.kind === 'Workspace') state.workspace = JSON.parse(row.json);
+      if (row.kind === 'Workspace') {
+        state.workspace = JSON.parse(row.json);
+        state.revision = row.revision ?? 0;
+      }
       if (row.kind === 'Agency') state.agencies.push(JSON.parse(row.json));
       if (row.kind === 'Deal') state.deals.push(JSON.parse(row.json));
       if (row.kind === 'Run') state.runs.push(JSON.parse(row.json));
@@ -75,8 +105,24 @@ export class Store {
   }
   private async write(state: State): Promise<void> {
     // One atomic Cypher statement: reads never see half an agreement or reservation.
+    // Compare-and-swap: the statement only runs if the workspace revision is unchanged since
+    // this state was read. Grouping by `rev` makes every later clause see zero rows otherwise.
     const params: Record<string, string | number | boolean> = {};
-    const lines = ['OPTIONAL MATCH (old) DETACH DELETE old WITH count(old) AS removed'];
+    const writeId = randomUUID(),
+      nextRevision = (state.revision ?? 0) + 1;
+    params.writeId = writeId;
+    params.nextRevision = nextRevision;
+    const lines =
+      state.revision === undefined
+        ? [
+            'OPTIONAL MATCH (w:Workspace) WITH count(w) AS existing WHERE existing = 0 WITH 0 AS rev',
+            'OPTIONAL MATCH (old) DETACH DELETE old WITH rev, count(old) AS removed',
+          ]
+        : [
+            'MATCH (w:Workspace) WHERE coalesce(w.revision, 0) = $expected WITH coalesce(w.revision, 0) AS rev',
+            'OPTIONAL MATCH (old) DETACH DELETE old WITH rev, count(old) AS removed',
+          ];
+    if (state.revision !== undefined) params.expected = state.revision;
     const agencyVars = new Map<string, string>(),
       runVars = new Map<string, string>(),
       dealVars = new Map<string, string>();
@@ -85,7 +131,9 @@ export class Store {
       synthetic: true,
     };
     params.workspace = JSON.stringify(workspace);
-    lines.push('CREATE (:Workspace {id:"workspace",json:$workspace})');
+    lines.push(
+      'CREATE (:Workspace {id:"workspace",json:$workspace,revision:$nextRevision,writeId:$writeId})',
+    );
     services.forEach((s, i) => {
       params[`s${i}`] = s;
       lines.push(`CREATE (s${i}:Service {id:$s${i}})`);
@@ -150,9 +198,17 @@ export class Store {
         lines.push(`CREATE (${v})-[:LEARNED_FROM]->(${dealVars.get(lesson.dealId)})`);
     });
     lines.push(
-      'WITH count(*) AS written MATCH (provider:Agency)-[:OFFERS]->(service:Service)<-[:NEEDS]-(recipient:Agency) WHERE provider.id <> recipient.id CREATE (provider)-[:CAN_SERVE {service:service.id}]->(recipient) RETURN count(*) AS edges',
+      'WITH rev, count(*) AS written MATCH (provider:Agency)-[:OFFERS]->(service:Service)<-[:NEEDS]-(recipient:Agency) WHERE provider.id <> recipient.id CREATE (provider)-[:CAN_SERVE {service:service.id}]->(recipient) RETURN count(*) AS edges',
     );
     await this.connection.graph.query(lines.join('\n'), { params });
+    const check = await this.connection.graph.roQuery<{ writeId: string }>(
+      'MATCH (w:Workspace) RETURN w.writeId AS writeId',
+    );
+    if (check.data?.[0]?.writeId !== writeId)
+      throw new DomainError(
+        'The workspace changed in another session while this action ran. Nothing was saved; reload and retry.',
+      );
+    state.revision = nextRevision;
   }
   async snapshot(): Promise<Snapshot> {
     const config = this.resolveModel();
@@ -166,6 +222,12 @@ export class Store {
           : data.agencies.length === 6
             ? 'starter'
             : 'custom'),
+      edges:
+        (
+          await this.connection.graph.roQuery<{ from: string; to: string; service: Service }>(
+            'MATCH (a:Agency)-[r:CAN_SERVE]->(b:Agency) RETURN a.id AS from, b.id AS to, r.service AS service',
+          )
+        ).data ?? [],
       database: this.connection.mode,
       agentMode: config ? 'Model agents available' : 'Policy simulation',
       modelConfigured: Boolean(config),
@@ -175,7 +237,9 @@ export class Store {
   }
   async reset(scenario: 'starter' | 'launch' | 'empty' = 'starter'): Promise<Snapshot> {
     return this.exclusive(async () => {
+      const { revision } = await this.read();
       await this.write({
+        revision,
         agencies:
           scenario === 'empty' ? [] : scenario === 'launch' ? showcaseAgencies() : seedAgencies(),
         workspace: {

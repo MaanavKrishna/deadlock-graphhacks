@@ -235,9 +235,7 @@ export default function NegotiationRoom({
                     </div>
                     <div>
                       <div className="log-title">
-                        <strong>
-                          {a?.name ?? (e.actor === 'advisor' ? 'Model advisor' : 'Coordinator')}
-                        </strong>
+                        <strong>{a?.name ?? 'Coordinator'}</strong>
                         <span>{e.round === 0 ? 'Context' : `Round ${e.round}`}</span>
                       </div>
                       <span className={`action-label ${e.action}`}>{e.action}</span>

@@ -43,8 +43,7 @@ export interface NegotiationEvent {
     | 'approve'
     | 'commit'
     | 'cancel'
-    | 'invalidate'
-    | 'advisor';
+    | 'invalidate';
   reason: string;
   at: string;
   tool?: string;
@@ -91,8 +90,15 @@ export interface Run {
   query: string;
   durationMs: number;
 }
+export interface GraphEdge {
+  from: string;
+  to: string;
+  service: Service;
+}
 export interface Snapshot {
   agencies: Agency[];
+  // Directed CAN_SERVE relationships as stored in FalkorDB.
+  edges: GraphEdge[];
   deals: Deal[];
   runs: Run[];
   database: string;
@@ -102,6 +108,7 @@ export interface Snapshot {
   modelName?: string;
   lessons: Lesson[];
   scenario?: 'starter' | 'launch' | 'custom';
+  accessRequired?: boolean;
 }
 export interface NegotiationResult {
   reportedModels?: string[];

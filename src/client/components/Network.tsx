@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { ArrowUpRight, CircleDot, Maximize2 } from 'lucide-react';
-import type { Agency } from '../../shared/types';
+import type { Agency, GraphEdge } from '../../shared/types';
 import { serviceNames } from '../../shared/types';
 
 export function Avatar({ agency, small = false }: { agency: Agency; small?: boolean }) {
@@ -15,10 +15,12 @@ export function Avatar({ agency, small = false }: { agency: Agency; small?: bool
 }
 export default function Network({
   agencies,
+  graphEdges,
   selectedIds,
   onSelectAgency,
 }: {
   agencies: Agency[];
+  graphEdges: GraphEdge[];
   selectedIds: string[];
   onSelectAgency: (a: Agency) => void;
 }) {
@@ -39,9 +41,13 @@ export default function Network({
       ),
     [agencies, canvasHeight],
   );
-  const edges = agencies.flatMap((a) =>
-    agencies.filter((b) => a.id !== b.id && a.offer === b.need).map((b) => ({ from: a, to: b })),
-  );
+  // Wires are the CAN_SERVE relationships FalkorDB derived, not a client-side guess.
+  const byId = new Map(agencies.map((a) => [a.id, a]));
+  const edges = graphEdges.flatMap((e) => {
+    const from = byId.get(e.from),
+      to = byId.get(e.to);
+    return from && to ? [{ from, to }] : [];
+  });
   const selectedEdges = selectedIds.map(
     (id, i) => `${id}:${selectedIds[(i + 1) % selectedIds.length]}`,
   );
@@ -152,7 +158,7 @@ export default function Network({
       <div className="network-footer">
         <span>
           <span className="legend-line" />
-          Offer matches a need
+          CAN_SERVE edge in FalkorDB
         </span>
         <span>
           <span className="legend-line chosen" />
