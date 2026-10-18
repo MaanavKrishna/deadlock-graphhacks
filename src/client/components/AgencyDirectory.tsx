@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowRight, Clock3, Pencil, Plus, X } from 'lucide-react';
-import type { Agency, Impact } from '../../shared/types';
+import { ArrowRight, Clock3, Pencil, Plus, Search, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import type { Agency, Impact, LoopStats } from '../../shared/types';
 import { services, serviceNames } from '../../shared/types';
 import { api } from '../api';
 import { Avatar } from './Network';
@@ -64,64 +65,160 @@ function ImpactPreview({ agency }: { agency: Agency }) {
 
 export default function AgencyDirectory({
   agencies,
+  loops,
   onEdit,
   onCreate,
 }: {
   agencies: Agency[];
+  loops?: LoopStats;
   onEdit: (a: Agency) => void;
   onCreate: () => void;
 }) {
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<'all' | 'available' | 'paused'>('all');
+  const shown = agencies.filter(
+    (a) =>
+      (filter === 'all' || (filter === 'available' ? a.active : !a.active)) &&
+      `${a.name} ${serviceNames[a.offer]} ${serviceNames[a.need]}`
+        .toLowerCase()
+        .includes(query.trim().toLowerCase()),
+  );
   return (
-    <section className="directory">
-      <div className="section-title">
-        <div>
-          <h2>The people behind the possibilities</h2>
-          <p>Every offer and need adds a new connection.</p>
+    <section className="directory v2">
+      <div className="directory-toolbar">
+        <label className="directory-search">
+          <Search size={16} aria-hidden="true" />
+          <span className="visually-hidden">Search agencies</span>
+          <input
+            type="search"
+            placeholder="Search by name or service"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <div className="segmented" role="group" aria-label="Filter agencies">
+          {(['all', 'available', 'paused'] as const).map((f) => (
+            <button
+              key={f}
+              className={filter === f ? 'active' : ''}
+              aria-pressed={filter === f}
+              onClick={() => setFilter(f)}
+            >
+              {filter === f && <motion.i layoutId="agency-filter" className="segmented-active" />}
+              <b>{f === 'all' ? `All ${agencies.length}` : f[0].toUpperCase() + f.slice(1)}</b>
+            </button>
+          ))}
         </div>
         <button className="primary" onClick={onCreate}>
           <Plus size={16} />
           Add agency
         </button>
       </div>
-      <div className="directory-list">
-        {agencies.map((a) => (
-          <article key={a.id} className={`agency-row ${!a.active ? 'paused' : ''}`}>
-            <div className="agency-identity">
-              <Avatar agency={a} />
-              <div>
-                <h3>{a.name}</h3>
-                <p>{a.description}</p>
-              </div>
-            </div>
-            <div className="agency-exchange">
-              <span>
-                <small>Offers</small>
-                {serviceNames[a.offer]}
-              </span>
-              <ArrowRight size={16} />
-              <span>
-                <small>Needs</small>
-                {serviceNames[a.need]}
-              </span>
-            </div>
-            <div className="agency-capacity">
-              <strong>
-                {Math.max(0, a.capacityHours - a.reservedHours - a.committedHours)}
-                <small>h available</small>
-              </strong>
-              <span>
-                {a.reservedHours}h held / {a.committedHours}h committed
-              </span>
-            </div>
-            <button className="icon-button" aria-label={`Edit ${a.name}`} onClick={() => onEdit(a)}>
-              <Pencil size={16} />
-            </button>
-            <span className={`availability ${a.active ? '' : 'off'}`}>
-              {a.active ? 'Available' : 'Paused'}
-            </span>
-          </article>
-        ))}
-      </div>
+      {shown.length === 0 ? (
+        <div className="large-empty">
+          <h3>
+            {agencies.length ? 'No agency matches.' : 'Add the first agency in your network.'}
+          </h3>
+          <p>Each profile is an offer, a need, spare hours and a deadline.</p>
+        </div>
+      ) : (
+        <motion.div
+          className="agency-grid"
+          initial="hidden"
+          animate="show"
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
+        >
+          <AnimatePresence>
+            {shown.map((a) => {
+              const free = Math.max(0, a.capacityHours - a.reservedHours - a.committedHours);
+              const pct = (n: number) => `${a.capacityHours ? (n / a.capacityHours) * 100 : 0}%`;
+              const inLoops = loops?.byAgency[a.id] ?? 0;
+              const keystone = loops?.keystoneIds.includes(a.id);
+              return (
+                <motion.article
+                  key={a.id}
+                  layout
+                  variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  whileHover={{ y: -3 }}
+                  className={`agency-card ${!a.active ? 'paused' : ''}`}
+                  style={{ ['--agency' as string]: a.color }}
+                >
+                  <header>
+                    <Avatar agency={a} />
+                    <div>
+                      <h3>{a.name}</h3>
+                      <span className={`status-chip ${a.active ? 'on' : 'off'}`}>
+                        {a.active ? 'Available' : 'Paused'}
+                      </span>
+                      {keystone && <span className="status-chip keystone">Keystone</span>}
+                    </div>
+                    <button
+                      className="icon-button"
+                      aria-label={`Edit ${a.name}`}
+                      onClick={() => onEdit(a)}
+                    >
+                      <Pencil size={16} />
+                    </button>
+                  </header>
+                  {a.description && <p className="agency-about">{a.description}</p>}
+                  <div className="agency-flow">
+                    <span>
+                      <small>Offers</small>
+                      {serviceNames[a.offer]}
+                    </span>
+                    <ArrowRight size={16} aria-hidden="true" />
+                    <span>
+                      <small>Needs</small>
+                      {serviceNames[a.need]}
+                    </span>
+                  </div>
+                  <div
+                    className="capacity-meter"
+                    aria-label={`${free} of ${a.capacityHours} hours free`}
+                  >
+                    <motion.i
+                      className="committed"
+                      initial={{ width: 0 }}
+                      animate={{ width: pct(a.committedHours) }}
+                    />
+                    <motion.i
+                      className="held"
+                      initial={{ width: 0 }}
+                      animate={{ width: pct(a.reservedHours) }}
+                    />
+                  </div>
+                  <dl className="agency-figures">
+                    <div>
+                      <dt>Free</dt>
+                      <dd>{free}h</dd>
+                    </div>
+                    <div>
+                      <dt>Held</dt>
+                      <dd>{a.reservedHours}h</dd>
+                    </div>
+                    <div>
+                      <dt>Committed</dt>
+                      <dd>{a.committedHours}h</dd>
+                    </div>
+                    <div>
+                      <dt>Loops</dt>
+                      <dd>{inLoops}</dd>
+                    </div>
+                  </dl>
+                  <footer>
+                    <span>
+                      <Clock3 size={13} aria-hidden="true" /> Delivers in {a.deliveryDays}d · needs
+                      by day {a.deadlineDays}
+                    </span>
+                    <span>{a.hourlyCredits} cr/h</span>
+                  </footer>
+                </motion.article>
+              );
+            })}
+          </AnimatePresence>
+        </motion.div>
+      )}
     </section>
   );
 }

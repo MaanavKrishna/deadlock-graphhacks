@@ -240,7 +240,15 @@ export default function App() {
             className={`help-nav ${view === 'guide' ? 'active' : ''}`}
             onClick={() => setView('guide')}
             title="Settings and guide"
+            aria-current={view === 'guide' ? 'page' : undefined}
           >
+            {view === 'guide' && (
+              <motion.i
+                layoutId="rail-active"
+                className="rail-active"
+                transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+              />
+            )}
             <Settings2 size={20} />
             <span className="rail-label">Settings</span>
           </button>
@@ -263,8 +271,8 @@ export default function App() {
                     : view === 'history'
                       ? 'Activity'
                       : view === 'memory'
-                        ? 'Agent memory'
-                        : 'Guide & settings'}
+                        ? 'Memory'
+                        : 'Settings'}
             </strong>
           </div>
           <div className="topbar-right">
@@ -694,6 +702,7 @@ export default function App() {
               {view === 'agencies' && (
                 <AgencyDirectory
                   agencies={state.agencies}
+                  loops={state.loops}
                   onEdit={setEditor}
                   onCreate={() => setEditor(null)}
                 />
@@ -731,7 +740,7 @@ export default function App() {
                 />
               )}
               {view === 'guide' && (
-                <section className="guide-grid">
+                <section className="guide-grid v2">
                   <article className="guide-main">
                     <h2>An exchange that comes full circle.</h2>
                     <p>
@@ -827,19 +836,36 @@ export default function App() {
                         The app records agreed capacity. No agency is contacted, no money changes
                         hands, and no service is delivered.
                       </p>
-                      <button
-                        className="secondary"
-                        onClick={() => {
-                          setResetScenario('starter');
-                          setResetOpen(true);
-                        }}
-                      >
-                        <RotateCcw size={15} />
-                        Replace workspace
-                      </button>
+                      <div className="scenario-cards" role="group" aria-label="Replace workspace">
+                        {(
+                          [
+                            ['starter', 'Example network', '6 synthetic agencies, 3 loops'],
+                            [
+                              'launch',
+                              'Launch challenge',
+                              '10 agencies, 4-party loops, a late trap',
+                            ],
+                            ['empty', 'Your own network', 'Start empty and add real profiles'],
+                          ] as const
+                        ).map(([id, title, detail]) => (
+                          <motion.button
+                            key={id}
+                            whileHover={{ y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            className={`scenario-card ${state.scenario === (id === 'empty' ? 'custom' : id) ? 'current' : ''}`}
+                            onClick={() => {
+                              setResetScenario(id);
+                              setResetOpen(true);
+                            }}
+                          >
+                            <strong>{title}</strong>
+                            <span>{detail}</span>
+                          </motion.button>
+                        ))}
+                      </div>
                       <p className="subtle">
-                        Choose the example network, the ten-agency challenge, or start your own
-                        network from an empty graph. Replacing clears agencies and history.
+                        Replacing asks for confirmation and clears this graph’s agencies,
+                        agreements, lessons and activity.
                       </p>
                     </article>
                   </div>

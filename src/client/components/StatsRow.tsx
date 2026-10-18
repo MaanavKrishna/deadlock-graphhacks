@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { animate, motion, useReducedMotion } from 'motion/react';
 import type { Snapshot } from '../../shared/types';
 
-function Counter({ value }: { value: number }) {
+export function Counter({ value }: { value: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   const previous = useRef(0);
   const reduce = useReducedMotion();

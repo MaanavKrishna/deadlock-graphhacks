@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { motion } from 'motion/react';
 import { BookOpen, ArrowRight, ExternalLink } from 'lucide-react';
 import type { Snapshot, Deal } from '../../shared/types';
 import { memoryComparison } from '../../shared/comparison';
+import { Counter } from './StatsRow';
 export default function MemoryView({
   state,
   onOpen,
@@ -15,7 +17,7 @@ export default function MemoryView({
   const agency = state.agencies.find((a) => a.id === current),
     comparison = memoryComparison(state.deals, current);
   return (
-    <section className="memory-view">
+    <section className="memory-view v2">
       <div className="section-title">
         <div>
           <h2>Memory that changes the next decision</h2>
@@ -25,6 +27,26 @@ export default function MemoryView({
           <BookOpen size={14} />
           {state.lessons.filter((l) => l.active !== false).length} active lessons
         </span>
+      </div>
+      <div className="activity-summary">
+        {[
+          ['Active lessons', state.lessons.filter((l) => l.active !== false).length],
+          ['Superseded lessons', state.lessons.filter((l) => l.active === false).length],
+          [
+            'Insights in force',
+            state.insights.filter(
+              (i) => state.agencies.find((a) => a.id === i.agencyId)?.revision === i.revision,
+            ).length,
+          ],
+          ['Committed agreements', state.deals.filter((d) => d.status === 'committed').length],
+        ].map(([label, value]) => (
+          <div className="stat-tile" key={label as string}>
+            <span>{label}</span>
+            <strong>
+              <Counter value={value as number} />
+            </strong>
+          </div>
+        ))}
       </div>
       <div className="memory-comparison">
         <div className="memory-comparison-heading">
@@ -51,14 +73,20 @@ export default function MemoryView({
                 { label: 'Memory disabled', deal: comparison.without },
                 { label: 'Memory enabled', deal: comparison.withMemory },
               ].map(({ label, deal }) => (
-                <div key={label}>
+                <motion.div
+                  key={label}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: label === 'Memory enabled' ? 0.15 : 0 }}
+                  className={label === 'Memory enabled' ? 'with-memory' : ''}
+                >
                   <span>{label}</span>
                   <strong>{deal.legs.find((l) => l.to === current)?.hours}h</strong>
                   <p>{agency?.name} receives</p>
                   <button className="text-button" onClick={() => onOpen(deal)}>
                     Inspect agreement {deal.id.slice(0, 8)} <ExternalLink size={12} />
                   </button>
-                </div>
+                </motion.div>
               ))}
             </div>
             <p className="comparison-proof">
@@ -90,7 +118,9 @@ export default function MemoryView({
             const a = state.agencies.find((a) => a.id === lesson.agencyId),
               source = state.deals.find((d) => d.id === lesson.dealId);
             return (
-              <article
+              <motion.article
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
                 key={lesson.id}
                 className={`lesson-card ${lesson.active === false ? 'superseded' : ''}`}
               >
@@ -118,7 +148,7 @@ export default function MemoryView({
                     : 'Participant-entered feedback. '}
                   It changes future objectives, not hard limits.
                 </small>
-              </article>
+              </motion.article>
             );
           })
         )}
@@ -144,7 +174,12 @@ export default function MemoryView({
               source = state.deals.find((d) => d.id === insight.dealId),
               stale = a ? a.revision !== insight.revision : true;
             return (
-              <article key={insight.id} className={`lesson-card ${stale ? 'superseded' : ''}`}>
+              <motion.article
+                key={insight.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`lesson-card ${stale ? 'superseded' : ''}`}
+              >
                 <div>
                   <strong>{a?.name ?? insight.agencyId}</strong>
                   <span>{stale ? 'Profile changed since' : 'Applies to current profile'}</span>
@@ -158,7 +193,7 @@ export default function MemoryView({
                     </button>
                   )}
                 </div>
-              </article>
+              </motion.article>
             );
           })
         )}
