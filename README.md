@@ -187,6 +187,6 @@ The automated suite contains 36 tests, including actual FalkorDB persistence, cr
 
 Included sample profiles, relationships, valuations and verification transactions are authored synthetic fixtures. Custom workspaces accept user-entered offers and constraints. No private company data, personal records or restricted sources are loaded. The app sends no external messages.
 
-OpenAI Codex assisted with ideation, scope, implementation, documentation and test execution. A separate Codex reviewer checked the design and implementation. The human participant must review, verify and understand the code, graph model, queries and technical decisions before submitting; the project does not claim that review has already happened.
+AI coding assistants were used during development, as permitted by the Graph Hacks rules.
 
 Technical references: [FalkorDB TypeScript client](https://github.com/FalkorDB/falkordb-ts), [FalkorDBLite](https://github.com/FalkorDB/falkordblite-ts), [FalkorDB Cypher](https://docs.falkordb.com/cypher/), [Chat Completions API](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create).
