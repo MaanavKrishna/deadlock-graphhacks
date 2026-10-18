@@ -7,6 +7,8 @@ import type {
   Snapshot,
   NegotiationOptions,
   Service,
+  Impact,
+  LoopStats,
 } from '../shared/types';
 import { services } from '../shared/types';
 import { canonicalCycle, event, negotiate as negotiateTerms } from './negotiation';
@@ -27,6 +29,10 @@ export class DomainError extends Error {
 }
 export const CYCLE_QUERY = `MATCH p=(a:Agency)-[:CAN_SERVE*3..4]->(a)
 WHERE all(n IN nodes(p) WHERE n.active = true)
+RETURN [n IN nodes(p) | n.id] AS ids LIMIT 2000`;
+// What-if variant: the same traversal with one agency treated as withdrawn.
+const CYCLE_WITHOUT_QUERY = `MATCH p=(a:Agency)-[:CAN_SERVE*3..4]->(a)
+WHERE all(n IN nodes(p) WHERE n.active = true AND n.id <> $excluded)
 RETURN [n IN nodes(p) | n.id] AS ids LIMIT 2000`;
 type State = Pick<Snapshot, 'agencies' | 'deals' | 'runs' | 'lessons'> & {
   workspace?: { scenario: 'starter' | 'launch' | 'custom'; synthetic: boolean };
@@ -210,11 +216,75 @@ export class Store {
       );
     state.revision = nextRevision;
   }
+  // Distinct directed loops (rotations merged) currently in the graph.
+  private async loops(excluded?: string): Promise<string[][]> {
+    const result = excluded
+      ? await this.connection.graph.roQuery<{ ids: string[] }>(CYCLE_WITHOUT_QUERY, {
+          params: { excluded },
+        })
+      : await this.connection.graph.roQuery<{ ids: string[] }>(CYCLE_QUERY);
+    const found = new Map<string, string[]>();
+    for (const row of result.data ?? []) {
+      const ids = row.ids.slice(0, -1);
+      if (new Set(ids).size !== ids.length) continue;
+      const key = canonicalCycle(ids);
+      if (!found.has(key)) found.set(key, key.split('|'));
+    }
+    return [...found.values()];
+  }
+  private loopStats(loops: string[][]): LoopStats {
+    const byAgency: Record<string, number> = {};
+    for (const loop of loops) for (const id of loop) byAgency[id] = (byAgency[id] ?? 0) + 1;
+    return {
+      total: loops.length,
+      byAgency,
+      keystoneIds: loops.length
+        ? Object.keys(byAgency)
+            .filter((id) => byAgency[id] === loops.length)
+            .sort()
+        : [],
+    };
+  }
+  async impact(agencyId: string): Promise<Impact> {
+    const state = await this.read();
+    if (!state.agencies.some((a) => a.id === agencyId))
+      throw new DomainError('Agency not found.', 404);
+    const [before, after] = await Promise.all([this.loops(), this.loops(agencyId)]);
+    const broken = before.filter((loop) => loop.includes(agencyId));
+    const pending = await this.connection.graph.roQuery<{ json: string }>(
+      "MATCH (d:Deal)-[:INVOLVES]->(a:Agency {id:$agencyId}) WHERE d.status = 'awaiting_approval' RETURN d.json AS json",
+      { params: { agencyId } },
+    );
+    const pendingDeals = (pending.data ?? []).map((row) => {
+      const deal = JSON.parse(row.json) as Deal;
+      return {
+        id: deal.id,
+        title: deal.title,
+        heldHours: deal.legs.reduce((n, l) => n + l.hours, 0),
+      };
+    });
+    const partners = [...new Set(broken.flat())].filter((id) => id !== agencyId).sort();
+    const afterStats = this.loopStats(after);
+    const name = (id: string) => state.agencies.find((a) => a.id === id)?.name ?? id;
+    return {
+      agencyId,
+      loopsBefore: before.length,
+      loopsAfter: after.length,
+      broken: broken.map((ids) => ({ agencyIds: ids, names: ids.map(name) })),
+      pendingDeals,
+      releasedHours: pendingDeals.reduce((n, d) => n + d.heldHours, 0),
+      reroutes: partners
+        .map((id) => ({ agencyId: id, loops: afterStats.byAgency[id] ?? 0 }))
+        .filter((r) => r.loops > 0),
+      stranded: partners.filter((id) => !afterStats.byAgency[id]),
+    };
+  }
   async snapshot(): Promise<Snapshot> {
     const config = this.resolveModel();
     const data = await this.read();
     return {
       ...data,
+      loops: this.loopStats(await this.loops()),
       scenario:
         data.workspace?.scenario ??
         (data.agencies.some((a) => a.id === 'premiere')

@@ -95,8 +95,25 @@ export interface GraphEdge {
   to: string;
   service: Service;
 }
+export interface LoopStats {
+  total: number;
+  byAgency: Record<string, number>;
+  // Agencies that every current loop runs through.
+  keystoneIds: string[];
+}
+export interface Impact {
+  agencyId: string;
+  loopsBefore: number;
+  loopsAfter: number;
+  broken: { agencyIds: string[]; names: string[] }[];
+  pendingDeals: { id: string; title: string; heldHours: number }[];
+  releasedHours: number;
+  reroutes: { agencyId: string; loops: number }[];
+  stranded: string[];
+}
 export interface Snapshot {
   agencies: Agency[];
+  loops: LoopStats;
   // Directed CAN_SERVE relationships as stored in FalkorDB.
   edges: GraphEdge[];
   deals: Deal[];

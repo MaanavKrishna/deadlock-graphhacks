@@ -1,8 +1,66 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowRight, Clock3, Pencil, Plus, X } from 'lucide-react';
-import type { Agency } from '../../shared/types';
+import type { Agency, Impact } from '../../shared/types';
 import { services, serviceNames } from '../../shared/types';
+import { api } from '../api';
 import { Avatar } from './Network';
+
+// What-if preview: FalkorDB re-runs the loop traversal without this agency.
+function ImpactPreview({ agency }: { agency: Agency }) {
+  const [impact, setImpact] = useState<Impact>();
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    api<Impact>(`/agencies/${encodeURIComponent(agency.id)}/impact`)
+      .then(setImpact)
+      .catch(() => setFailed(true));
+  }, [agency.id]);
+  if (failed) return null;
+  if (!impact)
+    return (
+      <div className="impact-preview" aria-live="polite">
+        Checking what depends on {agency.name}…
+      </div>
+    );
+  const names = new Map(
+    impact.broken.flatMap((l) => l.agencyIds.map((id, i) => [id, l.names[i]] as const)),
+  );
+  return (
+    <section className="impact-preview" aria-label={`If ${agency.name} withdraws`}>
+      <strong>If {agency.name} pauses</strong>
+      <p>
+        Breaks {impact.broken.length} of {impact.loopsBefore} graph loop
+        {impact.loopsBefore === 1 ? '' : 's'}
+        {impact.pendingDeals.length > 0 &&
+          `, invalidates ${impact.pendingDeals.length} pending agreement${impact.pendingDeals.length === 1 ? '' : 's'} and releases ${impact.releasedHours}h of held capacity`}
+        .
+      </p>
+      {impact.broken.length > 0 && (
+        <ul>
+          {impact.broken.map((l) => (
+            <li key={l.agencyIds.join('|')}>{l.names.join(' → ')} → back</li>
+          ))}
+        </ul>
+      )}
+      {impact.reroutes.length > 0 && (
+        <p>
+          Still routable:{' '}
+          {impact.reroutes
+            .map(
+              (r) =>
+                `${names.get(r.agencyId) ?? r.agencyId} (${r.loops} loop${r.loops === 1 ? '' : 's'})`,
+            )
+            .join(', ')}
+          .
+        </p>
+      )}
+      {impact.stranded.length > 0 && (
+        <p className="impact-stranded">
+          Left with no exchange: {impact.stranded.map((id) => names.get(id) ?? id).join(', ')}.
+        </p>
+      )}
+    </section>
+  );
+}
 
 export default function AgencyDirectory({
   agencies,
@@ -165,6 +223,7 @@ export function AgencyEditor({
             Saving this profile will invalidate pending agreements and release their capacity holds.
           </div>
         )}
+        {agency?.active && <ImpactPreview agency={agency} />}
         {error && (
           <div className="inline-error" role="alert">
             {error}

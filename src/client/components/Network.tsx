@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { ArrowUpRight, CircleDot, Maximize2 } from 'lucide-react';
-import type { Agency, GraphEdge } from '../../shared/types';
+import type { Agency, GraphEdge, LoopStats } from '../../shared/types';
 import { serviceNames } from '../../shared/types';
 
 export function Avatar({ agency, small = false }: { agency: Agency; small?: boolean }) {
@@ -16,11 +16,13 @@ export function Avatar({ agency, small = false }: { agency: Agency; small?: bool
 export default function Network({
   agencies,
   graphEdges,
+  loops,
   selectedIds,
   onSelectAgency,
 }: {
   agencies: Agency[];
   graphEdges: GraphEdge[];
+  loops?: LoopStats;
   selectedIds: string[];
   onSelectAgency: (a: Agency) => void;
 }) {
@@ -64,6 +66,7 @@ export default function Network({
         <span className="quiet-pill">
           <CircleDot size={13} />
           {agencies.filter((a) => a.active).length} available
+          {loops ? ` · ${loops.total} loop${loops.total === 1 ? '' : 's'}` : ''}
         </span>
       </div>
       <div className={`network-canvas ${agencies.length > 8 ? 'many' : ''}`}>
@@ -142,8 +145,9 @@ export default function Network({
               className={`network-node ${selectedIds.includes(a.id) ? 'selected' : ''} ${!a.active ? 'unavailable' : ''}`}
               style={{ left: `${(p.x / 760) * 100}%`, top: `${(p.y / canvasHeight) * 100}%` }}
               onClick={() => onSelectAgency(a)}
-              aria-label={`View ${a.name}`}
+              aria-label={`View ${a.name}${loops?.keystoneIds.includes(a.id) ? ', keystone: every loop runs through it' : ''}`}
             >
+              {loops?.keystoneIds.includes(a.id) && <em className="keystone-badge">Keystone</em>}
               <Avatar agency={a} />
               <strong>{a.name}</strong>
               <span>
@@ -164,6 +168,12 @@ export default function Network({
           <span className="legend-line chosen" />
           Selected exchange
         </span>
+        {loops && loops.keystoneIds.length > 0 && loops.keystoneIds.length < agencies.length && (
+          <span>
+            <em className="keystone-badge inline">Keystone</em>
+            Every loop runs through it
+          </span>
+        )}
         <span className="network-hint">
           <ArrowUpRight size={13} />
           Select an agency to inspect

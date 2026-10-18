@@ -60,6 +60,9 @@ export function createApp(store: Store, options: { accessKey?: () => string | un
   app.get('/api/state', async (_req, res) =>
     res.json({ ...(await store.snapshot()), accessRequired: Boolean(accessKey()) }),
   );
+  app.get('/api/agencies/:id/impact', async (req, res) =>
+    res.json(await store.impact(req.params.id)),
+  );
   app.post('/api/discover', async (_req, res) => res.json(await store.discover()));
   app.post('/api/negotiate', async (req, res) => {
     const body = z

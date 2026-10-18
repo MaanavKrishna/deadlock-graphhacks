@@ -403,6 +403,7 @@ export default function App() {
                     <Network
                       agencies={state.agencies}
                       graphEdges={state.edges}
+                      loops={state.loops}
                       selectedIds={deal?.agencyIds ?? candidate?.agencyIds ?? []}
                       onSelectAgency={setEditor}
                     />

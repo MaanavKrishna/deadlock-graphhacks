@@ -1711,7 +1711,7 @@ h2 {
 .inline-warning {
   background: #fff8eb;
   border: 1px solid #f0dfbd;
-  color: #b39766;
+  color: #7a4a12;
 }
 .confirm-backdrop {
   position: fixed;
@@ -2866,4 +2866,47 @@ time {
 .network-node.selected {
   border: 2px solid var(--purple);
   box-shadow: 0 6px 18px rgba(59, 55, 200, 0.18);
+}
+
+.keystone-badge {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #111318;
+  border-radius: 99px;
+  padding: 1px 8px;
+}
+.keystone-badge.inline {
+  position: static;
+  margin-right: 6px;
+}
+.impact-preview {
+  border: 1px solid #d9dbe3;
+  background: #f7f7fb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  font-size: 14px;
+  color: #3d4150;
+}
+.impact-preview strong {
+  display: block;
+  color: #111318;
+  margin-bottom: 4px;
+}
+.impact-preview p,
+.impact-preview ul {
+  margin: 4px 0;
+}
+.impact-preview ul {
+  padding-left: 18px;
+}
+.impact-stranded {
+  color: #8a3d0b;
+  font-weight: 600;
 }
