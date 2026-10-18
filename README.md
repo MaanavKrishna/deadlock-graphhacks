@@ -54,7 +54,7 @@ npm run build
 npm start
 ```
 
-The local API binds to `127.0.0.1` by default. It is one shared workspace without per-user accounts. Set `ACCESS_KEY` to require a key for workspace replacement and paid model negotiations; discovery, policy negotiation, approvals and profile edits remain open so visitors can try the exchange.
+The local API binds to `127.0.0.1` by default. It is one shared workspace without per-user accounts. Per-client rate limits apply to the API (per 10 minutes: 1,200 reads, 120 writes, 20 AI requests; requests carrying the access key are exempt). Set `ACCESS_KEY` to require a key for workspace replacement and paid model negotiations; discovery, policy negotiation, approvals and profile edits remain open so visitors can try the exchange.
 
 ### Hosted deployment (Vercel + FalkorDB Cloud)
 

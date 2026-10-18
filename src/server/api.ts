@@ -30,7 +30,18 @@ const agencySchema = z.object({
 const digest = (value: string) => createHash('sha256').update(value).digest();
 // ACCESS_KEY protects actions that are destructive (workspace replacement) or spend the
 // operator's model credits. Everything else stays open so visitors can try the exchange.
-export function createApp(store: Store, options: { accessKey?: () => string | undefined } = {}) {
+export interface RateLimits {
+  windowMs: number;
+  reads: number;
+  writes: number;
+  // Requests that spend model credits: Ask and live-model negotiations.
+  costly: number;
+}
+const defaultLimits: RateLimits = { windowMs: 10 * 60_000, reads: 1200, writes: 120, costly: 20 };
+export function createApp(
+  store: Store,
+  options: { accessKey?: () => string | undefined; rateLimits?: RateLimits } = {},
+) {
   const accessKey = options.accessKey ?? (() => process.env.ACCESS_KEY?.trim() || undefined);
   const requireKey = (req: express.Request) => {
     const expected = accessKey();
@@ -41,6 +52,17 @@ export function createApp(store: Store, options: { accessKey?: () => string | un
   };
   const app = express();
   app.disable('x-powered-by');
+  // Behind Vercel (or another proxy) the client address arrives in X-Forwarded-For.
+  if (process.env.VERCEL || process.env.TRUST_PROXY === '1') app.set('trust proxy', true);
+  const limits = options.rateLimits ?? defaultLimits;
+  // Fixed-window counters per client and class, held in memory. On serverless each instance
+  // counts separately, which still caps bursts from one client against one instance.
+  const windows = new Map<string, { start: number; count: number }>();
+  const hasKey = (req: express.Request) => {
+    const expected = accessKey();
+    const supplied = req.get('x-access-key');
+    return Boolean(expected && supplied && timingSafeEqual(digest(supplied), digest(expected)));
+  };
   app.use('/api', (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
     const origin = req.headers.origin;
@@ -55,6 +77,36 @@ export function createApp(store: Store, options: { accessKey?: () => string | un
     next();
   });
   app.use(express.json({ limit: '32kb' }));
+  app.use('/api', (req, res, next) => {
+    if (hasKey(req)) return next();
+    const costly =
+      req.path === '/ask' ||
+      (req.path.startsWith('/negotiate') && (req.body as { mode?: string })?.mode === 'model');
+    const kind = costly
+      ? 'costly'
+      : req.method === 'GET' || req.path.startsWith('/tools/')
+        ? 'reads'
+        : 'writes';
+    const now = Date.now();
+    if (windows.size > 10_000)
+      for (const [k, w] of windows) if (now - w.start > limits.windowMs) windows.delete(k);
+    const key = `${req.ip}|${kind}`;
+    const current = windows.get(key);
+    const entry =
+      current && now - current.start < limits.windowMs ? current : { start: now, count: 0 };
+    entry.count++;
+    windows.set(key, entry);
+    if (entry.count > limits[kind]) {
+      res.setHeader('Retry-After', String(Math.ceil((entry.start + limits.windowMs - now) / 1000)));
+      return res.status(429).json({
+        error:
+          kind === 'costly'
+            ? 'Too many AI requests from this connection. Try again in a few minutes.'
+            : 'Too many requests from this connection. Try again in a few minutes.',
+      });
+    }
+    next();
+  });
   app.get('/api/health', async (_req, res) => {
     const s = await store.snapshot();
     res.json({ ok: true, database: s.database, agentMode: s.agentMode });

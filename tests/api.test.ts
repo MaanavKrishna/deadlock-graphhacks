@@ -151,3 +151,27 @@ it('streams a negotiation as NDJSON ending with the persisted deal', async () =>
       .at(-1).type,
   ).toBe('error');
 });
+it('rate-limits writes and paid actions per client, and lets the operator key through', async () => {
+  const limited = createApp(store, {
+    accessKey: () => 'operator',
+    rateLimits: { windowMs: 60_000, reads: 100, writes: 3, costly: 1 },
+  });
+  for (let i = 0; i < 3; i++)
+    expect((await request(limited).post('/api/discover').send({})).status).toBe(200);
+  const blocked = await request(limited).post('/api/discover').send({});
+  expect(blocked.status).toBe(429);
+  expect(blocked.headers['retry-after']).toBeTruthy();
+  expect(
+    (await request(limited).post('/api/discover').set('x-access-key', 'operator').send({})).status,
+  ).toBe(200);
+  // Reads stay available while writes are limited.
+  expect((await request(limited).get('/api/state')).status).toBe(200);
+  const costly = createApp(store, {
+    rateLimits: { windowMs: 60_000, reads: 100, writes: 100, costly: 1 },
+  });
+  // Too short to pass validation, so no model is called; it still counts against the limit.
+  expect((await request(costly).post('/api/ask').send({ question: 'x' })).status).toBe(400);
+  expect(
+    (await request(costly).post('/api/ask').send({ question: 'Who is the keystone?' })).status,
+  ).toBe(429);
+});
