@@ -15,7 +15,8 @@ Deadlock is a graph-native capacity exchange for small creative-agency communiti
 
 ## Tracks
 
-- **Agents That Act on Connected Data:** Cypher cycle traversal selects participants; constrained agents counter terms and create capacity holds and commitments.
+- **Agents That Act on Connected Data:** Cypher cycle traversal selects participants; constrained agents counter terms and create capacity holds and commitments. What-if traversals explain what breaks if an agency leaves, flag keystone agencies and predict which recruit would open the most loops. Graph queries are agent tools, chained by the Ask agent and exposed to any client through an MCP server.
+- **Company Brain:** "Ask the network" answers questions about who offers what, who depends on whom, and why each agreement ended as it did, chaining graph tools and citing the agency, deal, lesson and insight nodes it used. Decisions trace back to source events; insights expire when the underlying profile changes.
 - **Agent Memory and Coordination:** Representative decisions, shared reservations, approval state and prior agreements and source-backed scope lessons persist across sessions. A live memory ablation changed received scope from 10h to 8h; disabling memory restores baseline terms in the controlled policy integration test.
 
 ## Included
@@ -38,7 +39,7 @@ Deadlock is a graph-native capacity exchange for small creative-agency communiti
 - [ ] Review the published narrated video and paste its URL into the submission.
 - [x] Public repository/video URLs included in README.
 - [ ] Submit before the event deadline shown on the official site.
-- [ ] Name both entered tracks in the form.
+- [ ] Name all three entered tracks in the form: Agents That Act on Connected Data; Agent Memory and Coordination; Company Brain.
 - [ ] Disclose AI coding assistance accurately.
 
 Public repository and video links are recorded below after publication. No hosted application or hackathon submission is claimed. Complete local instructions are the deployment path. The team's membership locks after submission according to the event rules provided by the participant.

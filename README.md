@@ -4,11 +4,29 @@
 
 Deadlock lets fictional creative agencies exchange spare capacity in three- or four-party agreements. One agency's offer meets another's need; FalkorDB finds the cycle that closes the exchange. Live model representatives inspect graph context, accept, counter or reject validated proposals. A key-free policy simulation is also available. Humans approve each participant before the complete cycle commits.
 
-Tracks: **Agents That Act on Connected Data** and **Agent Memory and Coordination**.
+Tracks: **Agents That Act on Connected Data**, **Agent Memory and Coordination** and **Company Brain**.
+
+## What the graph does
+
+| Capability | How FalkorDB does the work | Track |
+|---|---|---|
+| Find exchanges no pair can make | Variable-length cycle traversal over derived `CAN_SERVE` edges | 01 |
+| **What breaks if an agency leaves** | The same traversal re-run with that agency excluded: broken loops, affected agreements, held hours, who is still routable, who is stranded | 01 |
+| **Keystone agencies** | Agencies every current loop runs through, flagged on the network | 01 |
+| **Who to recruit next** | 1–2 hop path query for each missing offer/need profile predicts how many new loops it would open (prediction verified by test) | 01 |
+| Agents act on the graph | Representatives inspect graph context and accept, counter or reject validated proposals; capacity is held only after all agree | 01 |
+| **Ask the network** | An agent chains seven fixed, parameterized Cypher tools and must cite the agency, deal, lesson or loop nodes it retrieved | 01 · 03 |
+| **MCP server** | `npm run mcp` exposes the same graph tools plus discovery and negotiation to any MCP client | 01 |
+| Memory that changes terms | Human-taught `Lesson` nodes (`ABOUT`, `LEARNED_FROM`) produce remembered proposals; ablation proves the change | 02 |
+| **Memory that learns by itself** | Committed agreements write `TRADED_WITH` partner edges that lift proven loops; failed negotiations write `Insight` nodes that flag the loop until the blocking profile changes | 02 · 03 |
+| Shared state across instances | Every write is a compare-and-swap on the graph's workspace revision | 02 |
+| Decisions traced to source | Every decision is an `Event` node linked to its agreement and agency; `explain_deal` walks it | 03 |
 
 [Public source](https://github.com/MaanavKrishna/deadlock-graphhacks) · [Three-minute narrated video](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.2.0/deadlock-live-demo.mp4) · [Release and downloads](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/tag/v0.2.0)
 
-![Live Claude negotiation with user-entered profiles](docs/images/workspace.png)
+![Exchange desk: graph loops, keystone agency and recruitment what-if](docs/images/workspace.png)
+
+![Ask the network: graph tool calls with cited sources](docs/images/ask.png)
 
 ## Run locally
 
@@ -87,6 +105,9 @@ graph LR
   E -->|BY| A
   L[Lesson] -->|ABOUT| A
   L -->|LEARNED_FROM| D
+  I[Insight] -->|ABOUT| B
+  I -->|LEARNED_FROM| D
+  A -->|TRADED_WITH| B
 ```
 
 - **Agency:** offer, need, capacity, held/committed hours, valuation, minimum/requested hours, deadlines, availability and revision.
@@ -95,6 +116,8 @@ graph LR
 - **Deal:** immutable participant/terms snapshot, lifecycle status, member approvals and negotiation events.
 - **Event:** actor, round, actual tool/proposal, evidence IDs, public justification and timestamp.
 - **Lesson:** explicit participant feedback, preferred scope, active/superseded state, source agreement and agency.
+- **Insight:** written automatically when a negotiation fails: blocking agency, reason, source agreement and the agency revision it applies to.
+- **TRADED_WITH:** written for every leg of a committed agreement; discovery ranks loops with proven partners higher.
 
 Readable JSON properties preserve complete snapshots; explicit nodes and relationships power matching, memory and provenance. See [all queries](docs/QUERIES.cypher) and [architecture](docs/ARCHITECTURE.md).
 
@@ -137,6 +160,27 @@ Lessons persist across a database restart. Disabling memory restores the origina
 
 Choose **Launch challenge · 10 agencies** and confirm the replacement. It includes unequal hourly valuations, constrained capacity, real four-party cycles through Shipyard and Signal Press, and Premiere's attractive but late delivery. The graph discovers Premiere's paths, but deadline checks reject them even when requested credit totals are higher. Scenario replacement clears existing agencies, lessons and history after confirmation.
 
+### Ask the network and MCP
+
+Open **Ask the network** and ask, for example, "What breaks if Motionhaus leaves?" or "Which agency does every loop depend on?". The agent may only call fixed graph tools (`list_agencies`, `find_providers`, `who_can_serve`, `find_loops`, `withdrawal_impact`, `agency_history`, `explain_deal`, `recruit_suggestions`); it never writes Cypher. Its answer can only cite node ids those tools returned, and the tool trace is shown under every answer. Requires a configured model; protected by `ACCESS_KEY` when set.
+
+To use the graph from Claude Desktop, Claude Code or another MCP client while Deadlock runs:
+
+```json
+{
+  "mcpServers": {
+    "deadlock": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp.ts"],
+      "cwd": "/path/to/deadlock-graphhacks",
+      "env": { "DEADLOCK_URL": "http://127.0.0.1:3000" }
+    }
+  }
+}
+```
+
+The MCP server adds `discover_exchanges` and `negotiate_loop` (policy agents). It deliberately cannot approve agreements; that stays a human action in the app.
+
 ## Docker or an external database
 
 If Docker is running, the complete app and database can be started with:
@@ -170,7 +214,7 @@ Live testing also produced rejected negotiations. A repeated-inspection issue wa
 
 A separate browser journey entered Atlas Design, Beacon Motion and Cedar Copy through the profile editor, discovered their graph cycle, and completed a live Haiku negotiation with 10h per participant held for approval. Custom workspace and export metadata correctly identify user-entered profiles.
 
-The automated suite contains 36 tests, including actual FalkorDB persistence, cross-instance revision conflicts, graph-sourced network edges, access-key protection, custom empty workspace reopen, model HTTP protocol, controlled memory comparison, concurrency and approvals. A local narrated recording shows real live-model evidence, graph traversal and working profile entry; narration uses a disclosed synthetic voice.
+The automated suite contains 45 tests, including withdrawal what-if traversal, keystone detection, recruitment predictions verified against real additions, self-learning partner edges and failure insights, the Ask agent's tool chaining and citation filtering over the real protocol, the MCP tool routes, including actual FalkorDB persistence, cross-instance revision conflicts, graph-sourced network edges, access-key protection, custom empty workspace reopen, model HTTP protocol, controlled memory comparison, concurrency and approvals. A local narrated recording shows real live-model evidence, graph traversal and working profile entry; narration uses a disclosed synthetic voice.
 
 ## Project documentation
 

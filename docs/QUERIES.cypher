@@ -67,3 +67,23 @@ RETURN a.id AS from, b.id AS to, r.service AS service;
 // WITH coalesce(w.revision, 0) AS rev
 // OPTIONAL MATCH (old) DETACH DELETE old WITH rev, count(old) AS removed
 // CREATE (:Workspace {revision:$nextRevision, writeId:$writeId, ...}) ...
+
+// 12. What-if withdrawal: the cycle traversal with one agency excluded.
+MATCH p=(a:Agency)-[:CAN_SERVE*3..4]->(a)
+WHERE all(n IN nodes(p) WHERE n.active = true AND n.id <> $excluded)
+RETURN [n IN nodes(p) | n.id] AS ids LIMIT 2000;
+
+// 13. Recruitment what-if: a new agency offering $offer and needing $need closes one loop per path.
+MATCH p=(a:Agency)-[:CAN_SERVE*1..2]->(b:Agency)
+WHERE a.need = $offer AND b.offer = $need AND all(n IN nodes(p) WHERE n.active = true)
+RETURN [n IN nodes(p) | n.id] AS ids LIMIT 500;
+
+// 14. Self-learning memory consulted by discovery.
+MATCH (a:Agency)-[t:TRADED_WITH]->(b:Agency)
+RETURN a.id AS from, b.id AS to, collect(DISTINCT t.dealId) AS deals;
+MATCH (i:Insight)-[:ABOUT]->(a:Agency) WHERE i.revision = a.revision
+RETURN i.json AS json;
+
+// 15. Decision trace used by the explain_deal tool.
+MATCH (:Deal {id:$dealId})-[:HAS_EVENT]->(e:Event) OPTIONAL MATCH (e)-[:BY]->(a:Agency)
+RETURN e.json AS json, a.name AS by;
