@@ -61,4 +61,4 @@ Files: showcase fixtures, reset/scenario API, React exchange controls, room evid
 - [x] Run typecheck, full tests, build, browser QA and independent read-only review; fix consequential findings with regression tests.
 - [x] Update README, architecture, demo and submission docs to match actual verified behavior.
 - [x] Record narrated two/three-minute walkthrough; label synthetic voice and actual model mode accurately.
-- [ ] Check Git tracked contents for secrets; create public repository and push only project source/docs. Return repository and video artifacts, noting any required external activation/upload.
+- [x] Check Git tracked contents for secrets; create public repository and push only project source/docs. Return repository and video artifacts, noting any required external activation/upload.

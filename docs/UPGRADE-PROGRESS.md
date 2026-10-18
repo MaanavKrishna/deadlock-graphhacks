@@ -24,3 +24,6 @@ Plan: docs/superpowers/plans/2026-10-18-agent-upgrade.md.
 - Final tool-menu regression green: counter choices exclude current and previously visited proposals; no counter tool is exposed when none remain. All35 tests/typecheck/build pass; independent follow-up reviewer found no consequential issues.
 - Finished narrated live walkthrough (180.13s, H.264/AAC, synthetic voice). Actual model failures remain visible and are described accurately.
 - Custom live browser verification completed for three newly entered profiles: graph-discovered cycle, actual Haiku decisions, 10h holds, correct non-sample workspace/export metadata.
+
+- Public source published at https://github.com/MaanavKrishna/deadlock-graphhacks on branch codex/deadlock. Key scan checked all 62 publishable files with zero key matches; .env remains ignored. Final npm run check passes35 tests/typecheck/build; Prettier passes.
+- Narrated MP4 and source archive are release deliverables for v0.2.0. Participant source understanding, video review, and submission form remain human responsibilities.

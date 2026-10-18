@@ -6,6 +6,8 @@ Deadlock lets fictional creative agencies exchange spare capacity in three- or f
 
 Tracks: **Agents That Act on Connected Data** and **Agent Memory and Coordination**.
 
+[Public source](https://github.com/MaanavKrishna/deadlock-graphhacks) · [Three-minute narrated video](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.2.0/deadlock-live-demo.mp4) · [Release and downloads](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/tag/v0.2.0)
+
 ![Live Claude negotiation with user-entered profiles](docs/images/workspace.png)
 
 ## Run locally
