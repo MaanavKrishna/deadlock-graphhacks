@@ -33,6 +33,7 @@ import AgencyDirectory, { AgencyEditor } from './components/AgencyDirectory';
 import History from './components/History';
 import MemoryView from './components/MemoryView';
 import AskView from './components/AskView';
+import GrowthCard from './components/GrowthCard';
 
 type View = 'exchange' | 'ask' | 'agencies' | 'history' | 'memory' | 'guide';
 export default function App() {
@@ -557,6 +558,9 @@ export default function App() {
                         </div>
                       )}
                     </section>
+                    <GrowthCard
+                      version={state.agencies.map((a) => `${a.id}:${a.revision}`).join(',')}
+                    />
                     <div className="bottom-note">
                       <span className="brand-mark mini">
                         <i />

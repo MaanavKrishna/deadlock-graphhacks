@@ -246,6 +246,23 @@ export const graphTools = [
       };
     },
   }),
+  tool({
+    name: 'recruit_suggestions',
+    description:
+      'What-if growth analysis: which new offer/need profile would close the most new loops, and whether it removes dependence on the keystone agency.',
+    input: z.object({}).strict(),
+    async run(store) {
+      const options = (await store.growth()).slice(0, 5);
+      return {
+        data: options,
+        sources: options.map((o) => ({
+          type: 'loop' as const,
+          id: `growth:${o.offer}>${o.need}`,
+          label: `${o.offer} provider needing ${o.need}: +${o.newLoops} loops`,
+        })),
+      };
+    },
+  }),
 ];
 export type GraphToolName = (typeof graphTools)[number]['name'];
 

@@ -3037,3 +3037,38 @@ time {
   font-size: 12px;
   overflow-wrap: anywhere;
 }
+
+.growth-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin: 16px 0 24px;
+  font-size: 14px;
+  color: #3d4150;
+}
+.growth-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0b6e64;
+}
+.growth-head h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #111318;
+}
+.growth-card p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+.growth-card b {
+  color: #111318;
+}
+.growth-card ul {
+  margin: 6px 0;
+  padding-left: 18px;
+}
+.growth-rest {
+  color: var(--muted);
+}

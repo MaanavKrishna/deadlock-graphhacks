@@ -169,6 +169,14 @@ export interface Insight {
   revision: number;
   createdAt: string;
 }
+export interface GrowthOption {
+  offer: Service;
+  need: Service;
+  newLoops: number;
+  examples: string[][];
+  // True when some new loop avoids every current keystone agency.
+  reducesKeystone: boolean;
+}
 export interface Source {
   type: 'agency' | 'deal' | 'lesson' | 'insight' | 'loop';
   id: string;

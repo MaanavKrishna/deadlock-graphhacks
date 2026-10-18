@@ -10,6 +10,7 @@ import type {
   Impact,
   LoopStats,
   Insight,
+  GrowthOption,
 } from '../shared/types';
 import { services } from '../shared/types';
 import { canonicalCycle, event, negotiate as negotiateTerms } from './negotiation';
@@ -268,6 +269,41 @@ export class Store {
             .sort()
         : [],
     };
+  }
+  // Recruitment what-if: a hypothetical agency offering `offer` and needing `need` closes a
+  // loop for every simple CAN_SERVE path from an agency needing `offer` to one offering `need`
+  // (one or two hops, giving loops of three or four).
+  async growth(): Promise<GrowthOption[]> {
+    const state = await this.read();
+    const keystones = this.loopStats(await this.loops()).keystoneIds;
+    const name = (id: string) => state.agencies.find((a) => a.id === id)?.name ?? id;
+    const options: GrowthOption[] = [];
+    for (const offer of services)
+      for (const need of services) {
+        if (offer === need) continue;
+        const rows = await this.readGraph<{ ids: string[] }>(
+          `MATCH p=(a:Agency)-[:CAN_SERVE*1..2]->(b:Agency)
+WHERE a.need = $offer AND b.offer = $need AND all(n IN nodes(p) WHERE n.active = true)
+RETURN [n IN nodes(p) | n.id] AS ids LIMIT 500`,
+          { offer, need },
+        );
+        const paths = rows.map((r) => r.ids).filter((ids) => new Set(ids).size === ids.length);
+        if (!paths.length) continue;
+        options.push({
+          offer,
+          need,
+          newLoops: paths.length,
+          examples: paths.slice(0, 3).map((ids) => ['New agency', ...ids.map(name)]),
+          reducesKeystone:
+            keystones.length > 0 && paths.some((ids) => !keystones.some((k) => ids.includes(k))),
+        });
+      }
+    return options.sort(
+      (a, b) =>
+        b.newLoops - a.newLoops ||
+        Number(b.reducesKeystone) - Number(a.reducesKeystone) ||
+        `${a.offer}${a.need}`.localeCompare(`${b.offer}${b.need}`),
+    );
   }
   currentModel(): ModelConfig | undefined {
     return this.resolveModel();
