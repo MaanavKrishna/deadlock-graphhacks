@@ -1,10 +1,29 @@
 # Deadlock
 
-**A connected deal where a direct swap cannot work.** Built by team **ContextSense** for Graph Hacks.
+**Three can trade where two can't.** Deadlock finds the hidden loops in a network of small agencies — where no two can swap spare hours directly, but three or four can — and lets AI representatives negotiate the terms, with a human approving every member. Built on **FalkorDB** by team **ContextSense** for Graph Hacks 2026.
 
-Deadlock lets fictional creative agencies exchange spare capacity in three- or four-party agreements. One agency's offer meets another's need; FalkorDB finds the cycle that closes the exchange. Live model representatives inspect graph context, accept, counter or reject validated proposals. A key-free policy simulation is also available. Humans approve each participant before the complete cycle commits.
+**[Live app](https://deadlock-graphhacks.vercel.app)** · **[Demo video](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.3.0/deadlock-v03-demo.mp4)** · **[Docs](https://deadlock-graphhacks.vercel.app/docs)** · [Release v0.3.0](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/tag/v0.3.0)
 
-Tracks: **Agents That Act on Connected Data**, **Agent Memory and Coordination** and **Company Brain**.
+Tracks: **Agents That Act on Connected Data** · **Agent Memory and Coordination** · **Company Brain**
+
+![Deadlock landing page](docs/images/landing.png)
+
+## For judges: try it in two minutes
+
+1. Open **[deadlock-graphhacks.vercel.app/app](https://deadlock-graphhacks.vercel.app/app)** (Vercel + FalkorDB Cloud, us-east-1).
+2. Click **Discover exchanges**. One Cypher traversal finds 3 loops; **Studio North** is marked **Keystone** because every loop runs through it.
+3. Select the **Motionhaus → Wordcraft → Studio North** loop. **Why the graph found this loop** shows each `OFFERS`/`NEEDS` hop and a query you can paste into FalkorDB to reproduce it.
+4. Click **Start negotiation**. Representatives decide in real time; capacity is held only when all agree, and you approve each member.
+5. Click **Motionhaus** on the graph to see what breaks if it leaves — before anything changes.
+6. Open **Ask the network** and ask *"Which agency does every exchange loop depend on?"* — the answer cites the graph nodes it used.
+
+Live Claude agents and Ask spend model credits, and workspace replacement wipes the shared graph, so those three actions ask for the **access key given in the submission**. Everything else is open, and policy agents work without a key.
+
+![Live negotiation on the exchange desk](docs/images/negotiation.png)
+
+## Why it matters
+
+Small studios and freelancers constantly have spare hours and unmet needs, but direct swaps rarely line up: the designer who needs copy rarely finds a writer who needs design. The exchange that works is usually a **loop**. Finding loops, explaining them, keeping agreements consistent and remembering what happened is a graph problem — so FalkorDB is not a store behind the app, it *is* the matching engine, the explainer and the memory.
 
 ## What the graph does
 
@@ -25,11 +44,13 @@ Tracks: **Agents That Act on Connected Data**, **Agent Memory and Coordination**
 | Shared state across instances | Every write is a compare-and-swap on the graph's workspace revision | 02 |
 | Decisions traced to source | Every decision is an `Event` node linked to its agreement and agency; `explain_deal` walks it | 03 |
 
-[Live app](https://deadlock-graphhacks.vercel.app) · [Public source](https://github.com/MaanavKrishna/deadlock-graphhacks) · [Demo video (v0.3)](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.3.0/deadlock-v03-demo.mp4) · [v0.2 walkthrough](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/download/v0.2.0/deadlock-live-demo.mp4) · [Release](https://github.com/MaanavKrishna/deadlock-graphhacks/releases/tag/v0.3.0)
+![FalkorDB algorithms and recruitment what-if](docs/images/algorithms.png)
 
-![Exchange desk: graph loops, keystone agency and recruitment what-if](docs/images/workspace.png)
+| Ask the network, with sources | Memory linked to its source agreements |
+|---|---|
+| ![Ask answer with cited sources](docs/images/ask.png) | ![Memory view](docs/images/memory.png) |
 
-![Ask the network: graph tool calls with cited sources](docs/images/ask.png)
+**Built with:** FalkorDB (Cypher, `algo.pageRank`, `algo.betweenness`, `algo.WCC`), TypeScript, Express, React, motion.dev, Claude Haiku 5.5 (tool-calling representatives and Ask agent), MCP, Vercel, FalkorDB Cloud. 52 automated tests run against real FalkorDB instances.
 
 ## Run locally
 
@@ -217,9 +238,10 @@ npm audit
 
 Tests start isolated real FalkorDB instances, so optional native binaries are required for the integration suite even when the app uses a remote database. Coverage includes policy counters and deadlines, graph cycle discovery, contention, human approval transitions, invalidation, cancellation, restart persistence, prior-context retrieval, API validation, real HTTP tool protocol, model-selected reservations, safe model failure, restart-persistent learned preferences and controlled memory ablation. Browser checks cover desktop/mobile negotiation, withdrawal, rerouting, approvals, profile editing/creation, and reload. See [browser QA](docs/BROWSER-QA.md) and [progress](docs/PROGRESS.md) for verification records.
 
-![Recorded memory comparison](docs/images/memory.png)
 
 ## Verified live behavior
+
+The hosted deployment (Vercel + FalkorDB Cloud, us-east-1) was checked end to end on 18–19 October: graph seeding, discovery (16 ms), FalkorDB algorithms on Cloud v4.22, streamed negotiation, cancellation releasing every hold, access-key protection (401) and cross-origin blocking (403).
 
 Claude Haiku 5.5 was tested through Anthropic's actual API. The baseline held 10h per participant. After explicit feedback preferring 8h, a live representative countered, every member accepted again, and the final proposal held 8h each. The Memory view links both outcomes under matching profiles, capacity and reported model identity. This is an observed model run, not a deterministic promise about future model choices.
 
@@ -227,7 +249,7 @@ Live testing also produced rejected negotiations. A repeated-inspection issue wa
 
 A separate browser journey entered Atlas Design, Beacon Motion and Cedar Copy through the profile editor, discovered their graph cycle, and completed a live Haiku negotiation with 10h per participant held for approval. Custom workspace and export metadata correctly identify user-entered profiles.
 
-The automated suite contains 51 tests against real FalkorDB instances. They cover policy limits, cycle discovery, contention and cross-instance revision conflicts, human approval transitions, invalidation, restart persistence, graph-sourced network edges, withdrawal what-ifs, keystones, recruitment predictions checked against real additions, FalkorDB algorithm results, the copyable evidence query for every loop, self-learning partner edges and failure insights, controlled memory comparison, the model HTTP protocol, live event streaming, the Ask agent's tool chaining and citation filtering, MCP tool routes, access-key protection and rate limiting. Browser checks cover desktop and mobile for the landing, docs and every workspace view.
+The automated suite contains 52 tests against real FalkorDB instances. They cover policy limits, cycle discovery, contention and cross-instance revision conflicts, human approval transitions, invalidation, restart persistence, graph-sourced network edges, withdrawal what-ifs, keystones, recruitment predictions checked against real additions, FalkorDB algorithm results, the copyable evidence query for every loop, self-learning partner edges and failure insights, controlled memory comparison, the model HTTP protocol, live event streaming, the Ask agent's tool chaining and citation filtering, MCP tool routes, access-key protection and rate limiting. Browser checks cover desktop and mobile for the landing, docs and every workspace view.
 
 ## Project documentation
 

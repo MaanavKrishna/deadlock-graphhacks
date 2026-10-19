@@ -59,3 +59,11 @@ Public repository and video links are recorded below after publication. No hoste
 8. What changes would be required for multiple server instances?
 9. What exactly is remembered between sessions, and how is it retrieved?
 10. What does the optional model do, and what can it never do?
+
+## Form answers (copy-paste)
+
+- **Project title:** Deadlock — three can trade where two can't
+- **Repository:** https://github.com/MaanavKrishna/deadlock-graphhacks
+- **Live demo:** https://deadlock-graphhacks.vercel.app
+- **Tracks:** Agents That Act on Connected Data; Agent Memory and Coordination; Company Brain
+- **Demo video:** upload `artifacts/deadlock-v03-demo.mp4` to YouTube (public or unlisted); the form requires a YouTube link.
